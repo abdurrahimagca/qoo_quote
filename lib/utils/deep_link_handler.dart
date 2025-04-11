@@ -3,15 +3,13 @@ import 'package:flutter/widgets.dart';
 
 class DeepLinkHandler {
   static const platform = MethodChannel('app/deep_links');
-  
+
   static Future<void> handleInitialLink(BuildContext context) async {
     try {
       final initialLink = await platform.invokeMethod<String>('getInitialLink');
-      if (initialLink != null) {
-        _handleLink(context, initialLink);
-      }
+      print('Initial link: $initialLink');
     } on PlatformException catch (e) {
-      print('Failed to get initial link: ${e.message}');
+      print("Failed to get initial link: '${e.message}'.");
     }
   }
 
@@ -29,4 +27,4 @@ class DeepLinkHandler {
       }
     });
   }
-} 
+}

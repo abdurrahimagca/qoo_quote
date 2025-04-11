@@ -62,14 +62,5 @@
 	<array>
 		<string>applinks:qq-api-test-v0.homelab-kaleici.space</string>
 	</array>
-	<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>quuquote</string> <!-- Senin scheme'in -->
-    </array>
-  </dict>
-</array>
 </dict>
 </plist>

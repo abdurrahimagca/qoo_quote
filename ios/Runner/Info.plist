@@ -62,5 +62,16 @@
 	<array>
 		<string>applinks:qq-api-test-v0.homelab-kaleici.space</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>qoo-quote</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>auth</string>
+        </dict>
+    </array>
 </dict>
 </plist>

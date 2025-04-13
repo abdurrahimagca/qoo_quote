@@ -9,15 +9,12 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(MaterialApp(
-    home: LoginPage(),
-  )
-
-      // MultiProvider(
-      //   providers: [
-      //     ChangeNotifierProvider(create: (_) => AuthProvider()),
-      //   ],
-      //   child: const QooQuoteApp(),
-      // ),
-      );
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const QooQuoteApp(),
+    ),
+  );
 }

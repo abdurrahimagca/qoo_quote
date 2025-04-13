@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
-import 'package:qoo_quote/screens/home.dart';
+import 'package:qoo_quote/screens/testPage.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -75,8 +75,11 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.account_circle, size: 100), // Logo kısmı için bir ikon
-              SizedBox(height: 20),
+              SvgPicture.asset(
+                "assets/appicon.svg",
+                height: 150,
+              ), // Logo kısmı için bir ikon
+              SizedBox(height: 50),
               Text(
                 currentText,
                 style: TextStyle(
@@ -92,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (context) => HomePage()));
+                        MaterialPageRoute(builder: (context) => MyHomePage()));
                   },
                   icon: SvgPicture.asset("assets/google.svg"),
                   label: Text(

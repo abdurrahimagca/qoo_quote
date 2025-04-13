@@ -45,9 +45,11 @@ dependencies:
   dio: ^5.8.0
   logger: ^1.2.0
   google_fonts: ^6.1.0
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^10.8.0
   sign_in_button: ^3.2.0
   flutter_svg: ^2.0.17
+  animated_notch_bottom_bar: ^1.0.3
+  textfield_search: ^0.11.1
 
 
 dev_dependencies:

@@ -438,7 +438,7 @@ class _CreatepageState extends State<Createpage> {
                           ),
                           Text(
                             selectedBook!.author,
-                            style: const TextStyle(color: Colors.white70),
+                            style: const TextStyle(color: Colors.white60),
                           ),
                         ],
                       ),

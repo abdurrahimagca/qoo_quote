@@ -62,5 +62,22 @@
 	<array>
 		<string>applinks:qq-api-test-v0.homelab-kaleici.space</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>qoo-quote</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>auth</string>
+        </dict>
+    </array>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Düzenlenmiş fotoğrafları galeriye kaydetmek için izin gerekiyor</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Fotoğrafları seçmek ve kaydetmek için izin gerekiyor</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Fotoğraf çekmek için kamera izni gerekiyor</string>
 </dict>
 </plist>

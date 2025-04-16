@@ -260,15 +260,15 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   children: [
                     GestureDetector(
                       onTap: () => _onNavTapped(0),
-                      child: _buildNavText("HOME", _currentIndex == 0),
+                      child: _buildNavText("ANASAYFA", _currentIndex == 0),
                     ),
                     GestureDetector(
                       onTap: () => _onNavTapped(1),
-                      child: _buildNavText("CREATE", _currentIndex == 1),
+                      child: _buildNavText("POST PAYLAŞ", _currentIndex == 1),
                     ),
                     GestureDetector(
                       onTap: () => _onNavTapped(2),
-                      child: _buildNavText("USR", _currentIndex == 2),
+                      child: _buildNavText("PROFİL", _currentIndex == 2),
                     ),
                   ],
                 ),

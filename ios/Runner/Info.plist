@@ -73,5 +73,11 @@
             <string>auth</string>
         </dict>
     </array>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Düzenlenmiş fotoğrafları galeriye kaydetmek için izin gerekiyor</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Fotoğrafları seçmek ve kaydetmek için izin gerekiyor</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Fotoğraf çekmek için kamera izni gerekiyor</string>
 </dict>
 </plist>

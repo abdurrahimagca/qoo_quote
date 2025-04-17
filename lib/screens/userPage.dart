@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:qoo_quote/core/theme/colors.dart';
+//please do not use these kind of wrong types
+//it is not a bad practice
+//what we're building is NOT A KINDLE
+class UserPost {
+  final String imageUrl;
+  final String quote;
+  //what's the purpose of this?
+  final String bookTitle;
+  // author is only the user it self
+  final String author;
 
-class UserItem {
-  final String username;
-  final String profileImage;
-  bool isFollowing;
-
-  UserItem({
-    required this.username,
-    required this.profileImage,
-    this.isFollowing = false,
+  UserPost({
+    //we do not take imageUrl never what u have to do is completely
+    //different a base64 string should be given
+    required this.imageUrl,
+    required this.quote,
+    required this.bookTitle,
+    required this.author,
   });
 }
 

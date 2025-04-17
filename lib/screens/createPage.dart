@@ -11,6 +11,33 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// ignore this file best thing u can do is start from scratch
+// what we expect ? :
+/*export const CreatePostSchema = z.object({
+  image: z.string().min(1).refine(validateBase64Image, {
+    message:
+      'Invalid image. Must be a base64 encoded JPEG, PNG, or WebP under 10MB',
+  }),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  postText: z.string(),
+  textInformation: TextInformationSchema.optional(),
+  backgroundInformation: BackgroundInformationSchema.optional(),
+  authorId: z.string().uuid(),
+  isFriendsOnly: z.boolean().optional(),
+  metaData: z.array(MetaDataSchema).optional().default([]),
+});*/
+// this is a very bad practice and should be avoided
+
+class Book {
+  final String title;
+  final String author;
+  //no!
+  final String imageUrl;
+
+  Book({required this.title, required this.author, required this.imageUrl});
+}
+
 class Createpage extends StatefulWidget {
   const Createpage({super.key});
 
@@ -19,10 +46,60 @@ class Createpage extends StatefulWidget {
 }
 
 class _CreatepageState extends State<Createpage> {
+  List<Book> searchResults = [];
+  bool isLoading = false;
+  //we do not have ANY KIND OF BOOK LIMIT ON POSTS NEVER
+  //ONLY THING WE HAVE IS A MASSIVE AMOUNT OF TYPE ENUMS
+
+  Book? selectedBook;
   File? selectedImage;
   final TextEditingController quoteController = TextEditingController();
-  double fontSize = 40.0;
-  double opacity = 0.3;
+  double fontSize = 40.0; // Varsayılan yazı boyutu
+  double opacity = 0.3; // Karartma opaklığı için yeni değişken
+
+  Future<void> searchBooks(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await http.get(Uri.parse(
+          'https://www.googleapis.com/books/v1/volumes?q=$query&langRestrict=tr'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final items = data['items'] as List<dynamic>;
+
+        setState(() {
+          searchResults = items.map((item) {
+            final volumeInfo = item['volumeInfo'];
+            //we would never took this information only if user gives
+            //this information to us
+            //we do not have any kind of book limit on posts
+            return Book(
+              title: volumeInfo['title'] ?? 'Başlık Bulunamadı',
+              author: (volumeInfo['authors'] as List<dynamic>?)?.first ??
+                  'Yazar Bilinmiyor',
+              imageUrl: volumeInfo['imageLinks']?['thumbnail'] ?? '',
+            );
+          }).toList();
+        });
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   Future<void> _pickAndCropImage() async {
     final ImagePicker picker = ImagePicker();
@@ -32,9 +109,13 @@ class _CreatepageState extends State<Createpage> {
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: image.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        //u would never want to compress exact same image
+        
         compressQuality: 100,
         uiSettings: [
           AndroidUiSettings(
+            //never use Turkish if u want to support many languages
+            //pls use i18n provider
             toolbarTitle: 'Fotoğrafı Kırp',
             toolbarColor: Colors.black,
             toolbarWidgetColor: Colors.white,

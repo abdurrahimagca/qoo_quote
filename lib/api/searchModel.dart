@@ -2,6 +2,8 @@
 //
 //     final welcome = welcomeFromJson(jsonString);
 
+// This is not even close how the actual data is we whats the purpose of volumeInfo?
+
 import 'dart:convert';
 
 Welcome welcomeFromJson(String str) => Welcome.fromJson(json.decode(str));
@@ -14,6 +16,7 @@ class Welcome {
   String etag;
   String selfLink;
   VolumeInfo volumeInfo;
+  // what Sale?
   SaleInfo saleInfo;
   AccessInfo accessInfo;
 
@@ -101,6 +104,7 @@ class AccessInfo {
 }
 
 class Epub {
+  //we
   bool isAvailable;
 
   Epub({

@@ -11,9 +11,28 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// ignore this file best thing u can do is start from scratch
+// what we expect ? :
+/*export const CreatePostSchema = z.object({
+  image: z.string().min(1).refine(validateBase64Image, {
+    message:
+      'Invalid image. Must be a base64 encoded JPEG, PNG, or WebP under 10MB',
+  }),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  postText: z.string(),
+  textInformation: TextInformationSchema.optional(),
+  backgroundInformation: BackgroundInformationSchema.optional(),
+  authorId: z.string().uuid(),
+  isFriendsOnly: z.boolean().optional(),
+  metaData: z.array(MetaDataSchema).optional().default([]),
+});*/
+// this is a very bad practice and should be avoided
+
 class Book {
   final String title;
   final String author;
+  //no!
   final String imageUrl;
 
   Book({required this.title, required this.author, required this.imageUrl});
@@ -29,6 +48,9 @@ class Createpage extends StatefulWidget {
 class _CreatepageState extends State<Createpage> {
   List<Book> searchResults = [];
   bool isLoading = false;
+  //we do not have ANY KIND OF BOOK LIMIT ON POSTS NEVER
+  //ONLY THING WE HAVE IS A MASSIVE AMOUNT OF TYPE ENUMS
+
   Book? selectedBook;
   File? selectedImage;
   final TextEditingController quoteController = TextEditingController();
@@ -58,6 +80,9 @@ class _CreatepageState extends State<Createpage> {
         setState(() {
           searchResults = items.map((item) {
             final volumeInfo = item['volumeInfo'];
+            //we would never took this information only if user gives
+            //this information to us
+            //we do not have any kind of book limit on posts
             return Book(
               title: volumeInfo['title'] ?? 'Başlık Bulunamadı',
               author: (volumeInfo['authors'] as List<dynamic>?)?.first ??
@@ -84,9 +109,13 @@ class _CreatepageState extends State<Createpage> {
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: image.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        //u would never want to compress exact same image
+        
         compressQuality: 100,
         uiSettings: [
           AndroidUiSettings(
+            //never use Turkish if u want to support many languages
+            //pls use i18n provider
             toolbarTitle: 'Fotoğrafı Kırp',
             toolbarColor: Colors.black,
             toolbarWidgetColor: Colors.white,

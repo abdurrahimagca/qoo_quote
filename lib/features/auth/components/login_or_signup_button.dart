@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
+import 'package:qoo_quote/services/rest_services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 
@@ -26,11 +26,11 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
   StreamSubscription? _sub;
   final _appLinks = AppLinks();
   final _logger = Logger();
+  final authService = AuthService();
 
   final String _loginUrl =
       "${dotenv.env["API_BASE_URL"]}/auth/google?redirect_uri=qoo-quote://auth/google/callback";
   final String _redirectUri = "qoo-quote://auth/google/callback";
-  final String? _apiKey = dotenv.env["API_KEY"];
 
   @override
   void initState() {
@@ -67,33 +67,14 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
     }
 
     try {
-      final dio = Dio();
-      final response = await dio.post(
-        "${dotenv.env["API_BASE_URL"]}/auth/exchange",
-        data: {"auth_code": authCode},
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-            "qq-api-key": _apiKey,
-          },
-        ),
-      );
-
-      if (response.data != null) {
-        final access = response.data["accessToken"]?.toString();
-        final refresh = response.data["refreshToken"]?.toString();
-
-        if (access == null || refresh == null) {
-          throw Exception("Token data is missing from response");
-        }
-
-        const storage = FlutterSecureStorage();
-        await storage.write(key: "access-token", value: access);
-        await storage.write(key: "refresh-token", value: refresh);
-
-        setState(() => _isLoading = false);
-        widget.onLoginSuccess();
-      }
+      final tokens = await authService.exchangeToken(authCode);
+      final access = tokens['accessToken']?.toString();
+      final refresh = tokens['refreshToken']?.toString();
+      const storage = FlutterSecureStorage();
+      await storage.write(key: "access-token", value: access);
+      await storage.write(key: "refresh-token", value: refresh);
+      setState(() => _isLoading = false);
+      widget.onLoginSuccess();
     } catch (e) {
       _logger.e("Error during token exchange: $e");
       setState(() => _isLoading = false);

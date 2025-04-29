@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:qoo_quote/features/auth/login_or_signup.dart';
+import 'package:qoo_quote/screens/home_page.dart';
+import 'package:qoo_quote/screens/login.dart';
+
 final Map<String, WidgetBuilder> routes = {
-  "/login-or-signup": (context) => const LoginOrSignupScreen(),
+  '/login': (context) => const LoginPage(),
+  '/home': (context) => const HomePage(),
 };

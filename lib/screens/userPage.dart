@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qoo_quote/core/theme/colors.dart';
+import 'package:qoo_quote/screens/searchPage.dart';
 //please do not use these kind of wrong types
 //it is not a bad practice
 //what we're building is NOT A KINDLE
@@ -75,7 +77,7 @@ class _UserpageState extends State<Userpage>
                       mainAxisAlignment:
                           MainAxisAlignment.end, // Aşağıda hizalama
                       children: [
-                        CircleAvatar(
+                        const CircleAvatar(
                           radius: 45, // Biraz küçültüldü
                           backgroundImage: CachedNetworkImageProvider(
                             "https://picsum.photos/200",

@@ -6,7 +6,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -110,7 +109,7 @@ class _CreatepageState extends State<Createpage> {
         sourcePath: image.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         //u would never want to compress exact same image
-        
+
         compressQuality: 100,
         uiSettings: [
           AndroidUiSettings(
@@ -205,18 +204,7 @@ class _CreatepageState extends State<Createpage> {
       final buffer = byteData!.buffer.asUint8List();
 
       // Galeriye kaydet
-      final result = await ImageGallerySaver.saveImage(
-        buffer,
-        quality: 100,
-        name: "quote_${DateTime.now().millisecondsSinceEpoch}",
-      );
-
-      if (result['isSuccess']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fotoğraf galeriye kaydedildi')),
-        );
-      }
-    } catch (e) {
+  } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bir hata oluştu')),
       );
@@ -304,7 +292,7 @@ class _CreatepageState extends State<Createpage> {
                     min: 0.0,
                     max: 0.8,
                     divisions: 16,
-                    label: (opacity * 100).round().toString() + '%',
+                    label: '${(opacity * 100).round()}%',
                     onChanged: (value) {
                       setState(() {
                         opacity = value;
@@ -376,9 +364,9 @@ class _CreatepageState extends State<Createpage> {
                       : null,
                 ),
                 child: selectedImage == null
-                    ? Column(
+                    ? const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Icon(
                             Icons.add_a_photo,
                             size: 50,

@@ -27,7 +27,7 @@ class _QooQuoteAppState extends State<QooQuoteApp> {
     return MaterialApp(
       title: 'Qoo Quote',
       theme: appTheme,
-      initialRoute: '/login-or-signup',
+      initialRoute: '/login',
       routes: routes,
     );
   }

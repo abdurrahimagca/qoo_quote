@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/createPage.dart';
-import 'package:qoo_quote/screens/homePage.dart';
+import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/userPage.dart';
 import 'package:qoo_quote/screens/searchPage.dart';
 

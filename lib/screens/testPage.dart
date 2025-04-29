@@ -6,6 +6,7 @@ import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/createPage.dart';
 import 'package:qoo_quote/screens/homePage.dart';
 import 'package:qoo_quote/screens/userPage.dart';
+import 'package:qoo_quote/screens/searchPage.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -16,7 +17,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
-  final TextEditingController _searchController = TextEditingController();
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
@@ -25,31 +25,15 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     Userpage(),
   ];
 
-  AnimationController? _animationController;
-  Animation<double>? _animation;
-  bool _showSearch = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _animation = CurvedAnimation(
-      parent: _animationController!,
-      curve: Curves.easeInOut,
-    );
-
-    _searchController.addListener(() {
-      setState(() {});
-    });
-  }
+  // Arama overlay kontrolü için
+  bool _showSearchOverlay = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void dispose() {
-    _animationController?.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -77,10 +61,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               fontSize: 16,
               foreground: Paint()
                 ..shader = const LinearGradient(
-                  colors: <Color>[
-                    Color(0xFFFF416C),
-                    Color(0xFFFF4B2B),
-                  ],
+                  colors: <Color>[AppColors.tertiary, AppColors.tertiary],
                 ).createShader(const Rect.fromLTWH(0.0, 0.0, 100.0, 20.0)),
             )
           : const TextStyle(
@@ -91,166 +72,30 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _toggleSearch() {
-    setState(() {
-      _showSearch = !_showSearch;
-    });
-
-    if (_showSearch) {
-      _animationController?.forward();
-    } else {
-      _animationController?.reverse();
-    }
-  }
-
-  Widget _buildSearchOverlay() {
-    final bool isSearching = _searchController.text.isNotEmpty;
-
-    return FadeTransition(
-      opacity: _animation!,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-              top: isSearching
-                  ? MediaQuery.of(context).padding.top +
-                      20 // SafeArea'yı dikkate al
-                  : MediaQuery.of(context).size.height / 2 - 30,
-              left: 24,
-              right: 24,
-              child: Material(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.white.withOpacity(0.1),
-                child: TextField(
-                  controller: _searchController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "arama yap",
-                    hintStyle: const TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.1),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () {
-                        _searchController.clear();
-                        FocusScope.of(context).unfocus();
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (isSearching)
-              Positioned(
-                top: 140,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: 10,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      margin: const EdgeInsets.all(12),
-                      color: Colors.grey[900],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ListTile(
-                            leading: const CircleAvatar(
-                              backgroundImage: AssetImage("assets/photo4.jpeg"),
-                              radius: 18,
-                            ),
-                            title: const Text(
-                              "Bacıganırtan31",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                            subtitle: const Text(
-                              "21 saat önce",
-                              style: TextStyle(color: Colors.white38),
-                            ),
-                            trailing: PopupMenuButton(
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(child: Text("Şikayet Et")),
-                                const PopupMenuItem(child: Text("Kaydet")),
-                              ],
-                              icon: const Icon(Icons.more_vert,
-                                  color: Colors.white),
-                            ),
-                          ),
-                          AspectRatio(
-                            aspectRatio: 1,
-                            child: Image.asset(
-                              'assets/photo2.jpeg',
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.all(15),
-                            child: Row(
-                              children: [
-                                Icon(Icons.favorite_border,
-                                    color: Colors.white),
-                                SizedBox(width: 8),
-                                Text("128",
-                                    style: TextStyle(color: Colors.white)),
-                                Spacer(),
-                                Text("21 saat önce",
-                                    style: TextStyle(color: Colors.grey)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: SvgPicture.asset(
-              "assets/appicon.svg",
-              height: 50,
-            ),
-            centerTitle: false,
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.settings),
-                color: Colors.white,
-              )
-            ],
-          ),
-          body: Column(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: SvgPicture.asset(
+          "assets/appicon.svg",
+          height: 50,
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.settings),
+            color: Colors.white,
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Ana içerik
+          Column(
             children: [
               Padding(
                 padding:
@@ -282,14 +127,112 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _toggleSearch,
-            backgroundColor: Colors.white,
-            child: const Icon(Icons.search, color: Colors.black),
-          ),
+
+          // Blur ve Search overlay
+          if (_showSearchOverlay)
+            BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: 5.0,
+                sigmaY: 5.0,
+              ),
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+
+          // Search TextField
+          if (_showSearchOverlay)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.4,
+              left: 24,
+              right: 24,
+              child: Material(
+                color: Colors.transparent,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) {
+                    if (value.isNotEmpty) {
+                      setState(() {
+                        _showSearchOverlay = false;
+                      });
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  SearchPage(
+                            initialQuery: value,
+                          ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, 1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeInOutCubic;
+
+                            var tween = Tween(begin: begin, end: end).chain(
+                              CurveTween(curve: curve),
+                            );
+
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 300),
+                        ),
+                      );
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'keyword',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide:
+                          BorderSide(color: Colors.pink.withOpacity(0.5)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: const BorderSide(color: AppColors.secondary),
+                    ),
+                    prefixIcon: Icon(Icons.search,
+                        color: Colors.white.withOpacity(0.5)),
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _showSearchOverlay = false;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _showSearchOverlay = true;
+          });
+          _searchFocusNode.requestFocus();
+        },
+        backgroundColor: Colors.black,
+        shape: const CircleBorder(), // Yuvarlak şekil eklendi
+        elevation: 4, // Opsiyonel: gölge efekti
+        child: const Icon(
+          Icons.search,
+          color: AppColors.secondary,
         ),
-        if (_showSearch) _buildSearchOverlay(),
-      ],
+      ),
     );
   }
 }

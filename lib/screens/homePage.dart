@@ -23,15 +23,8 @@ class PostCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.grey[900]!,
-            Colors.grey[850]!,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.black, // Gradient yerine düz siyah renk
+        borderRadius: BorderRadius.zero, // Köşeleri keskin yapar
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -67,7 +60,7 @@ class PostCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Kitap Kurdu",
+                        "USERNAME",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withOpacity(0.95),
@@ -75,13 +68,6 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        "21 saat önce",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 12,
-                        ),
-                      ),
                     ],
                   ),
                 ),

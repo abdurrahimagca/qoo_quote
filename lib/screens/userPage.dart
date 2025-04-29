@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qoo_quote/core/theme/colors.dart';
 
-class UserPost {
-  final String imageUrl;
-  final String quote;
-  final String bookTitle;
-  final String author;
+class UserItem {
+  final String username;
+  final String profileImage;
+  bool isFollowing;
 
-  UserPost({
-    required this.imageUrl,
-    required this.quote,
-    required this.bookTitle,
-    required this.author,
+  UserItem({
+    required this.username,
+    required this.profileImage,
+    this.isFollowing = false,
   });
 }
 
@@ -23,235 +21,341 @@ class Userpage extends StatefulWidget {
   State<Userpage> createState() => _UserpageState();
 }
 
-class _UserpageState extends State<Userpage> {
-  // Örnek veriler
-  final String username = "John Doe";
-  final String profileImage =
-      "https://picsum.photos/200"; // Örnek profil fotoğrafı
-  final int followers = 1234;
-  final int following = 567;
+class _UserpageState extends State<Userpage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late ScrollController _scrollController;
+  final List<UserItem> users = List.generate(
+    10,
+    (index) => UserItem(
+      username: "user.${index + 1}",
+      profileImage: "https://picsum.photos/200",
+    ),
+  );
 
-  // Örnek gönderiler
-  final List<UserPost> posts = [
-    UserPost(
-      imageUrl: "assets/photo2.jpeg", // Local asset olarak
-      quote: "Hayat kısa, kuşlar uçuyor.",
-      bookTitle: "Martı",
-      author: "Richard Bach",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg",
-      quote: "Yaşamak bir ağaç gibi tek ve hür...",
-      bookTitle: "Kuvâyi Milliye",
-      author: "Nazım Hikmet",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg", // Local asset olarak
-      quote: "Hayat kısa, kuşlar uçuyor.",
-      bookTitle: "Martı",
-      author: "Richard Bach",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg",
-      quote: "Yaşamak bir ağaç gibi tek ve hür...",
-      bookTitle: "Kuvâyi Milliye",
-      author: "Nazım Hikmet",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg", // Local asset olarak
-      quote: "Hayat kısa, kuşlar uçuyor.",
-      bookTitle: "Martı",
-      author: "Richard Bach",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg",
-      quote: "Yaşamak bir ağaç gibi tek ve hür...",
-      bookTitle: "Kuvâyi Milliye",
-      author: "Nazım Hikmet",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg", // Local asset olarak
-      quote: "Hayat kısa, kuşlar uçuyor.",
-      bookTitle: "Martı",
-      author: "Richard Bach",
-    ),
-    UserPost(
-      imageUrl: "assets/photo2.jpeg",
-      quote: "Yaşamak bir ağaç gibi tek ve hür...",
-      bookTitle: "Kuvâyi Milliye",
-      author: "Nazım Hikmet",
-    ),
-    // Daha fazla post eklenebilir
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: 1, // POSTS sekmesinden başlaması için
+    );
+    _scrollController = ScrollController();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.background,
-            expandedHeight: 300,
-            pinned: false, // AppBar'ın sabit kalmaması için false yapıldı
-            floating: true, // Aşağı kaydırırken hemen görünmesi için
-            snap: true, // Yarım kaydırmada tam açılması için
-            actions: [
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onSelected: (value) {
-                  if (value == 'change_photo') {
-                    // TODO: Profil fotoğrafı değiştirme işlemi
-                  } else if (value == 'logout') {
-                    // TODO: Çıkış yapma işlemi
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'change_photo',
-                    child: Text('Profil Fotoğrafını Değiştir'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Text('Çıkış Yap'),
-                  ),
-                ],
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 20),
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: CachedNetworkImageProvider(profileImage),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+      body: DefaultTabController(
+        length: 3,
+        child: NestedScrollView(
+          controller: _scrollController,
+          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                backgroundColor: AppColors.background,
+                expandedHeight:
+                    220, // TabBar'ın bittiği yerde kalması için düşürüldü
+                floating: false,
+                pinned: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Column(
+                      mainAxisAlignment:
+                          MainAxisAlignment.end, // Aşağıda hizalama
                       children: [
-                        _buildStatColumn('Takipçiler', followers),
-                        Container(
-                          height: 30,
-                          width: 1,
-                          color: Colors.white30,
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        _buildStatColumn('Takip Edilenler', following),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Gönderiler
-          SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 2,
-              crossAxisSpacing: 2,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final post = posts[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                  ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        post.imageUrl,
-                        fit: BoxFit.cover,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.7),
-                            ],
+                        CircleAvatar(
+                          radius: 45, // Biraz küçültüldü
+                          backgroundImage: CachedNetworkImageProvider(
+                            "https://picsum.photos/200",
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              post.quote,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              '${post.bookTitle} - ${post.author}',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 10,
-                              ),
-                            ),
+                        const SizedBox(height: 20), // Azaltıldı
+                        const Text(
+                          "@username",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18, // Biraz küçültüldü
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TabBar(
+                          controller: _tabController,
+                          dividerColor: Colors.transparent,
+                          indicatorColor: AppColors.primary,
+                          labelColor: AppColors.primary, // Seçili tab rengi
+
+                          tabs: const [
+                            Tab(text: "TAKİP"),
+                            Tab(text: "PROFİL"),
+                            Tab(text: "TAKİPÇİ"),
                           ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                );
-              },
-              childCount: posts.length,
-            ),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildUserList(users),
+              _buildPostsList(),
+              _buildUserList(users),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatColumn(String label, int count) {
-    return GestureDetector(
-      onTap: () {
-        // TODO: İlgili sayfaya yönlendirme
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            count.toString(),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildUserList(List<UserItem> users) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 0),
+      itemCount: users.length,
+      itemBuilder: (context, index) {
+        final user = users[index];
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.3),
+              width: 1,
             ),
           ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundImage: CachedNetworkImageProvider(user.profileImage),
+            ),
+            title: Text(
+              user.username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  user.isFollowing = !user.isFollowing;
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Text(
+                user.isFollowing ? 'Following' : 'Follow',
+                style: TextStyle(
+                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInteractionButton(IconData icon, String count, Color color) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 24,
+        ),
+        if (count.isNotEmpty) ...[
+          const SizedBox(width: 4),
           Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
+            count,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
             ),
           ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _buildPostsList() {
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: 10, // Example post count
+      itemBuilder: (context, index) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.zero,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Profile Header
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.secondary,
+                          width: 2,
+                        ),
+                      ),
+                      child: const CircleAvatar(
+                        backgroundImage:
+                            NetworkImage("https://picsum.photos/200"),
+                        radius: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "USERNAME",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withOpacity(0.95),
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton(
+                      icon: Icon(
+                        Icons.more_horiz,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      color: Colors.grey[850],
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          child: Row(
+                            children: [
+                              const Icon(Icons.bookmark_border,
+                                  color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Kaydet",
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          child: Row(
+                            children: [
+                              const Icon(Icons.flag_outlined,
+                                  color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Şikayet Et",
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Quote Image
+              ClipRRect(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          'https://picsum.photos/400',
+                          fit: BoxFit.cover,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.5),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Interaction Buttons
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    _buildInteractionButton(
+                      Icons.favorite_border,
+                      "128",
+                      Colors.pink[300]!,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildInteractionButton(
+                      Icons.chat_bubble_outline,
+                      "24",
+                      Colors.blue[300]!,
+                    ),
+                    const Spacer(),
+                    _buildInteractionButton(
+                      Icons.bookmark_border,
+                      "",
+                      Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -11,14 +11,6 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class Book {
-  final String title;
-  final String author;
-  final String imageUrl;
-
-  Book({required this.title, required this.author, required this.imageUrl});
-}
-
 class Createpage extends StatefulWidget {
   const Createpage({super.key});
 
@@ -27,54 +19,10 @@ class Createpage extends StatefulWidget {
 }
 
 class _CreatepageState extends State<Createpage> {
-  List<Book> searchResults = [];
-  bool isLoading = false;
-  Book? selectedBook;
   File? selectedImage;
   final TextEditingController quoteController = TextEditingController();
-  double fontSize = 40.0; // Varsayılan yazı boyutu
-  double opacity = 0.3; // Karartma opaklığı için yeni değişken
-
-  Future<void> searchBooks(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        searchResults = [];
-      });
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final response = await http.get(Uri.parse(
-          'https://www.googleapis.com/books/v1/volumes?q=$query&langRestrict=tr'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final items = data['items'] as List<dynamic>;
-
-        setState(() {
-          searchResults = items.map((item) {
-            final volumeInfo = item['volumeInfo'];
-            return Book(
-              title: volumeInfo['title'] ?? 'Başlık Bulunamadı',
-              author: (volumeInfo['authors'] as List<dynamic>?)?.first ??
-                  'Yazar Bilinmiyor',
-              imageUrl: volumeInfo['imageLinks']?['thumbnail'] ?? '',
-            );
-          }).toList();
-        });
-      }
-    } catch (e) {
-      print('Error: $e');
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
+  double fontSize = 40.0;
+  double opacity = 0.3;
 
   Future<void> _pickAndCropImage() async {
     final ImagePicker picker = ImagePicker();
@@ -331,130 +279,11 @@ class _CreatepageState extends State<Createpage> {
           children: [
             const SizedBox(height: 16),
 
-            // Kitap Arama Alanı
-            TextField(
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => searchBooks(value),
-              decoration: InputDecoration(
-                hintText: "Kitap ara...",
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: Colors.grey[800],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                prefixIcon: const Icon(Icons.search, color: Colors.white38),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Arama Sonuçları
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (searchResults.isNotEmpty)
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ListView.builder(
-                  itemCount: searchResults.length,
-                  itemBuilder: (context, index) {
-                    final book = searchResults[index];
-                    return ListTile(
-                      leading: book.imageUrl.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: CachedNetworkImage(
-                                imageUrl: book.imageUrl,
-                                width: 40,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey[700],
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
-                              ),
-                            )
-                          : Container(
-                              width: 40,
-                              height: 60,
-                              color: Colors.grey[700],
-                              child:
-                                  const Icon(Icons.book, color: Colors.white38),
-                            ),
-                      title: Text(
-                        book.title,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      subtitle: Text(
-                        book.author,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          selectedBook = book;
-                          searchResults = [];
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Seçilen Kitap
-            if (selectedBook != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    if (selectedBook!.imageUrl.isNotEmpty)
-                      CachedNetworkImage(
-                        imageUrl: selectedBook!.imageUrl,
-                        width: 60,
-                        height: 90,
-                        fit: BoxFit.cover,
-                      ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selectedBook!.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            selectedBook!.author,
-                            style: const TextStyle(color: Colors.white60),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
             // Fotoğraf Ekleme
             GestureDetector(
               onTap: _pickAndCropImage,
               child: Container(
-                height: MediaQuery.of(context).size.width -
-                    32, // Tam kare görünüm için
+                height: MediaQuery.of(context).size.width - 32,
                 decoration: BoxDecoration(
                   color: Colors.grey[800],
                   borderRadius: BorderRadius.circular(16),

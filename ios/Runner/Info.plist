@@ -55,6 +55,22 @@
 			<key>CFBundleURLName</key>
 			<string>qq-api-test-v0.homelab-kaleici.space</string>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>qoo-quote</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>auth</string>
+		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>qooquote</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.example.qooquote</string>
+		</dict>
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
@@ -62,17 +78,6 @@
 	<array>
 		<string>applinks:qq-api-test-v0.homelab-kaleici.space</string>
 	</array>
-	<key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>qoo-quote</string>
-            </array>
-            <key>CFBundleURLName</key>
-            <string>auth</string>
-        </dict>
-    </array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Düzenlenmiş fotoğrafları galeriye kaydetmek için izin gerekiyor</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/features/auth/components/login_or_signup_button.dart';
 import 'package:qoo_quote/screens/home_page.dart';
+import 'package:qoo_quote/screens/patch_user_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -97,10 +98,25 @@ class _LoginPageState extends State<LoginPage> {
                 height: 55,
                 child: LoginOrSignupButton(
                   onLoginSuccess: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
+                    // well get a isFirstLogin in here in a while for now lets assume everyone
+                    // is first login
+                    const bool isFirstLogin = true;
+                    if (isFirstLogin) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PatchUserPage(),
+                        ),
+                      );
+                      return;
+                    }
+                    // if not first login then go to home page
+                    /* else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomePage()),
+                      );
+                    } */
                   },
                   onLoginError: () {
                     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qoo_quote/core/theme/colors.dart';
+
 //please do not use these kind of wrong types
 //it is not a bad practice
 //what we're building is NOT A KINDLE
@@ -18,6 +20,18 @@ class UserPost {
     required this.quote,
     required this.bookTitle,
     required this.author,
+  });
+}
+
+class UserItem {
+  final String username;
+  final String profileImage;
+  bool isFollowing;
+
+  UserItem({
+    required this.username,
+    required this.profileImage,
+    this.isFollowing = false,
   });
 }
 
@@ -55,69 +69,66 @@ class _UserpageState extends State<Userpage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: DefaultTabController(
-        length: 3,
-        child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                backgroundColor: AppColors.background,
-                expandedHeight:
-                    220, // TabBar'ın bittiği yerde kalması için düşürüldü
-                floating: false,
-                pinned: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.end, // Aşağıda hizalama
-                      children: [
-                        CircleAvatar(
-                          radius: 45, // Biraz küçültüldü
-                          backgroundImage: CachedNetworkImageProvider(
-                            "https://picsum.photos/200",
-                          ),
+      body: NestedScrollView(
+        // Removed DefaultTabController
+        controller: _scrollController,
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              backgroundColor: AppColors.background,
+              expandedHeight: 220,
+              floating: false,
+              pinned: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Column(
+                    mainAxisAlignment:
+                        MainAxisAlignment.end, // Aşağıda hizalama
+                    children: [
+                      CircleAvatar(
+                        radius: 45, // Biraz küçültüldü
+                        backgroundImage: CachedNetworkImageProvider(
+                          "https://picsum.photos/200",
                         ),
-                        const SizedBox(height: 20), // Azaltıldı
-                        const Text(
-                          "@username",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18, // Biraz küçültüldü
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      const SizedBox(height: 20), // Azaltıldı
+                      const Text(
+                        "Loremipsum02",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18, // Biraz küçültüldü
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 16),
-                        TabBar(
-                          controller: _tabController,
-                          dividerColor: Colors.transparent,
-                          indicatorColor: AppColors.primary,
-                          labelColor: AppColors.primary, // Seçili tab rengi
+                      ),
+                      const SizedBox(height: 16),
+                      TabBar(
+                        controller: _tabController,
+                        dividerColor: Colors.transparent,
+                        indicatorColor: AppColors.primary,
+                        labelColor: AppColors.primary, // Seçili tab rengi
 
-                          tabs: const [
-                            Tab(text: "TAKİP"),
-                            Tab(text: "PROFİL"),
-                            Tab(text: "TAKİPÇİ"),
-                          ],
-                        ),
-                      ],
-                    ),
+                        tabs: const [
+                          Tab(text: "TAKİP"),
+                          Tab(text: "PROFİL"),
+                          Tab(text: "TAKİPÇİ"),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildUserList(users),
-              _buildPostsList(),
-              _buildUserList(users),
-            ],
-          ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildUserList(users),
+            _buildPostsList(),
+            _buildUserList(users),
+          ],
         ),
       ),
     );
@@ -240,8 +251,8 @@ class _UserpageState extends State<Userpage>
                         ),
                       ),
                       child: const CircleAvatar(
-                        backgroundImage:
-                            NetworkImage("https://picsum.photos/200"),
+                        backgroundImage: CachedNetworkImageProvider(
+                            "https://picsum.photos/200"),
                         radius: 20,
                       ),
                     ),
@@ -312,8 +323,8 @@ class _UserpageState extends State<Userpage>
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          'https://picsum.photos/400',
+                        CachedNetworkImage(
+                          imageUrl: 'https://picsum.photos/400',
                           fit: BoxFit.cover,
                         ),
                         Container(

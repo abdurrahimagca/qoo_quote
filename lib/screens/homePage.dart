@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qoo_quote/screens/userPage.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -41,34 +42,56 @@ class PostCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.purple.withOpacity(0.5),
-                      width: 2,
+                GestureDetector(
+                  onTap: () {
+                    // Kullanıcı profil sayfasına git
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Userpage(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.purple.withOpacity(0.5),
+                        width: 2,
+                      ),
                     ),
-                  ),
-                  child: const CircleAvatar(
-                    backgroundImage: AssetImage("assets/photo4.jpeg"),
-                    radius: 20,
+                    child: const CircleAvatar(
+                      backgroundImage: AssetImage("assets/photo4.jpeg"),
+                      radius: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "USERNAME",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withOpacity(0.95),
-                          fontSize: 16,
+                  child: GestureDetector(
+                    onTap: () {
+                      // Kullanıcı profil sayfasına git
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Userpage(),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                    ],
+                      );
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "USERNAME",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.95),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                      ],
+                    ),
                   ),
                 ),
                 PopupMenuButton(

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
+import 'package:qoo_quote/screens/userPage.dart';
 
 class SearchPage extends StatefulWidget {
   final String initialQuery;
@@ -29,14 +30,16 @@ class UserItem {
 class _SearchPageState extends State<SearchPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode(); // Add this
   late TabController _tabController;
 
-  // Add this list to store sample users
+  // Update the users list in _SearchPageState class
   final List<UserItem> users = List.generate(
     10,
     (index) => UserItem(
       username: "user.${index + 1}",
-      profileImage: "https://picsum.photos/200",
+      profileImage:
+          "https://picsum.photos/id/64/400", // Sabit bir fotoğraf ID'si kullanıyoruz
     ),
   );
 
@@ -44,12 +47,17 @@ class _SearchPageState extends State<SearchPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Add this to focus on TextField when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();
+    _searchFocusNode.dispose(); // Add this
     super.dispose();
   }
 
@@ -69,6 +77,15 @@ class _SearchPageState extends State<SearchPage>
             ),
           ),
           child: ListTile(
+            onTap: () {
+              // Navigate to user profile page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const Userpage(),
+                ),
+              );
+            },
             leading: CircleAvatar(
               backgroundImage: CachedNetworkImageProvider(user.profileImage),
             ),
@@ -127,6 +144,7 @@ class _SearchPageState extends State<SearchPage>
               ),
               child: TextField(
                 controller: _searchController,
+                focusNode: _searchFocusNode, // Add this
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'keyword',

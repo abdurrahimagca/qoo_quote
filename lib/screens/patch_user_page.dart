@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/features/auth/components/select_username.dart';
+import 'package:qoo_quote/screens/testPage.dart';
 
 class PatchUserPage extends StatelessWidget {
   const PatchUserPage({super.key});
@@ -8,7 +10,7 @@ class PatchUserPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Hesap Oluştur'),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -19,7 +21,7 @@ class PatchUserPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Change Username',
+              'Kullanıcı Adı',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -34,17 +36,21 @@ class PatchUserPage extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   // TODO: Implement save functionality
-                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyHomePage(),
+                      ));
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                  backgroundColor: AppColors.secondary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: const Text(
-                  'Save Changes',
+                  'Kaydet',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

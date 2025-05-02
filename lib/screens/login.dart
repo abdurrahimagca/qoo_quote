@@ -5,6 +5,7 @@ import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/features/auth/components/login_or_signup_button.dart';
 import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/patch_user_page.dart';
+import 'package:qoo_quote/screens/testPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -97,26 +98,22 @@ class _LoginPageState extends State<LoginPage> {
                 width: 255,
                 height: 55,
                 child: LoginOrSignupButton(
-                  onLoginSuccess: () {
-                    // well get a isFirstLogin in here in a while for now lets assume everyone
-                    // is first login
-                    const bool isFirstLogin = true;
-                    if (isFirstLogin) {
+                  onLoginSuccess: (String authCode, bool isNewUser) {
+                    if (isNewUser) {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const PatchUserPage(),
                         ),
                       );
-                      return;
-                    }
-                    // if not first login then go to home page
-                    /* else {
+                    } else {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
+                        MaterialPageRoute(
+                          builder: (context) => const MyHomePage(),
+                        ),
                       );
-                    } */
+                    }
                   },
                   onLoginError: () {
                     ScaffoldMessenger.of(context).showSnackBar(

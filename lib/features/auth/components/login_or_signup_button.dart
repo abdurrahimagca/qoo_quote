@@ -2,23 +2,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logger/logger.dart';
 import 'package:qoo_quote/services/rest_services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 
 class LoginOrSignupButton extends StatefulWidget {
-  final VoidCallback onLoginSuccess;
+  final Function(String authCode, bool isNewUser)? onLoginSuccess;
   final VoidCallback? onLoginError;
 
   const LoginOrSignupButton({
-    super.key,
-    required this.onLoginSuccess,
+    Key? key,
+    this.onLoginSuccess,
     this.onLoginError,
-  });
+  }) : super(key: key);
 
   @override
-  State<LoginOrSignupButton> createState() => _LoginOrSignupButtonState();
+  _LoginOrSignupButtonState createState() => _LoginOrSignupButtonState();
 }
 
 class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
@@ -58,6 +59,7 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
 
   Future<void> _handleCallback(Uri uri) async {
     final authCode = uri.queryParameters["auth_code"];
+    final isNewUser = uri.queryParameters['is_new_user'] == 'true';
     _logger.d("Auth code: $authCode");
 
     if (authCode == null) {
@@ -67,14 +69,7 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
     }
 
     try {
-      final tokens = await authService.exchangeToken(authCode);
-      final access = tokens['accessToken']?.toString();
-      final refresh = tokens['refreshToken']?.toString();
-      const storage = FlutterSecureStorage();
-      await storage.write(key: "access-token", value: access);
-      await storage.write(key: "refresh-token", value: refresh);
-      setState(() => _isLoading = false);
-      widget.onLoginSuccess();
+      widget.onLoginSuccess?.call(authCode, isNewUser);
     } catch (e) {
       _logger.e("Error during token exchange: $e");
       setState(() => _isLoading = false);
@@ -119,7 +114,11 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset('assets/google.svg', height: 24, width: 24),
+          SvgPicture.asset(
+            "assets/google.svg",
+            height: 24,
+            width: 24,
+          ),
           const SizedBox(width: 12),
           _isLoading
               ? const SizedBox(

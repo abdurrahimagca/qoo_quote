@@ -84,5 +84,10 @@
 	<string>Fotoğrafları seçmek ve kaydetmek için izin gerekiyor</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Fotoğraf çekmek için kamera izni gerekiyor</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>http</string>
+		<string>https</string>
+	</array>
 </dict>
 </plist>

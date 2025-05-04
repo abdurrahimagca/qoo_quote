@@ -1,95 +1,148 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
-import 'package:qoo_quote/services/rest_services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 
-class LoginOrSignupButton extends StatefulWidget {
-  final Function(String authCode, bool isNewUser)? onLoginSuccess;
-  final VoidCallback? onLoginError;
+//TODO: use this file as a starter of how you implement it
+// typically u may wanna implement sth like a client to read jwt append every req res from gql
+//
 
-  const LoginOrSignupButton({
-    Key? key,
-    this.onLoginSuccess,
-    this.onLoginError,
-  }) : super(key: key);
+class LoginOrSignupScreen extends StatefulWidget {
+  const LoginOrSignupScreen({super.key});
 
   @override
-  _LoginOrSignupButtonState createState() => _LoginOrSignupButtonState();
+  LoginOrSignupScreenState createState() => LoginOrSignupScreenState();
 }
 
-class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
-  bool _isLoading = false;
+class LoginOrSignupScreenState extends State<LoginOrSignupScreen> {
+  bool _isLoading = true;
+  String? _error;
+  String? _authCode;
   StreamSubscription? _sub;
-  final _appLinks = AppLinks();
-  final _logger = Logger();
-  final authService = AuthService();
+  final appLinks = AppLinks();
 
-  final String _loginUrl =
+  final String loginUrl =
       "${dotenv.env["API_BASE_URL"]}/auth/google?redirect_uri=qoo-quote://auth/google/callback";
-  final String _redirectUri = "qoo-quote://auth/google/callback";
+
+  final String redirectUri = "qoo-quote://auth/google/callback";
+  final String? apiKey = dotenv.env["API_KEY"];
 
   @override
   void initState() {
     super.initState();
     _initAppLinks();
+    _launchBrowser();
   }
 
   Future<void> _initAppLinks() async {
     try {
-      final uri = await _appLinks.getInitialLink();
-      if (uri != null && uri.toString().startsWith(_redirectUri)) {
+      final uri = await appLinks.getInitialLink();
+      if (uri != null && uri.toString().startsWith(redirectUri)) {
         await _handleCallback(uri);
       }
 
-      _sub = _appLinks.uriLinkStream.listen((Uri? uri) async {
-        if (uri != null && uri.toString().startsWith(_redirectUri)) {
+      _sub = appLinks.uriLinkStream.listen((Uri? uri) async {
+        if (uri != null && uri.toString().startsWith(redirectUri)) {
           await _handleCallback(uri);
         }
       });
     } catch (e) {
-      _logger.e("Failed to handle deep link: $e");
-      widget.onLoginError?.call();
+      setState(() {
+        _error = "Failed to handle deep link: $e";
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _launchBrowser() async {
+    try {
+      final Uri url = Uri.parse(loginUrl);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        setState(() {
+          _error = 'Could not launch browser';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = "Failed to launch browser: $e";
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _handleCallback(Uri uri) async {
     final authCode = uri.queryParameters["auth_code"];
-    final isNewUser = uri.queryParameters['is_new_user'] == 'true';
-    _logger.d("Auth code: $authCode");
+    var logger = Logger();
+    logger.d("Auth code: $authCode");
 
     if (authCode == null) {
-      _logger.e("No auth code found in URI");
-      widget.onLoginError?.call();
+      setState(() {
+        _error = "No auth code found in URI";
+        _isLoading = false;
+      });
       return;
     }
+    final dio = Dio();
+    await dio
+        .post(
+      "${dotenv.env["API_BASE_URL"]}/auth/exchange",
+      data: {
+        "auth_code": authCode,
+      },
+      options: Options(
+        headers: {
+          "Content-Type": "application/json",
+          "qq-api-key": apiKey,
+        },
+      ),
+    )
+        .then((response) async {
+      logger.d("Response: ${response.data}");
+      if (response.data != null) {
+        try {
+          final access = response.data["accessToken"]?.toString();
+          final refresh = response.data["refreshToken"]?.toString();
 
-    try {
-      widget.onLoginSuccess?.call(authCode, isNewUser);
-    } catch (e) {
-      _logger.e("Error during token exchange: $e");
-      setState(() => _isLoading = false);
-      widget.onLoginError?.call();
-    }
-  }
-
-  Future<void> _startLogin() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final Uri url = Uri.parse(_loginUrl);
-      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-        throw Exception('Could not launch browser');
+          if (access == null || refresh == null) {
+            throw Exception("Token data is missing from response");
+          }
+          const storage = FlutterSecureStorage();
+          await storage.write(key: "access-token", value: access);
+          await storage.write(key: "refresh-token", value: refresh);
+          final tokensFromStorage = await storage.readAll();
+          logger.d("Tokens stored successfully", tokensFromStorage);
+        } catch (e) {
+          logger.e("Error storing tokens: $e");
+          setState(() {
+            _error = "Failed to store tokens: $e";
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _error = "Failed to get access token";
+          _isLoading = false;
+        });
       }
-    } catch (e) {
-      _logger.e("Failed to launch browser: $e");
-      setState(() => _isLoading = false);
-      widget.onLoginError?.call();
-    }
+    }).catchError((e) {
+      setState(() {
+        _error = "Failed to get access token: $e";
+        _isLoading = false;
+      });
+    });
+
+    setState(() {
+      _authCode = authCode;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -100,37 +153,49 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : _startLogin,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.grey),
+    return Scaffold(
+      appBar: AppBar(title: const Text("Login with Google")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isLoading) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              const Text("Opening browser for login..."),
+            ],
+            if (_authCode != null) ...[
+              const Icon(Icons.check_circle, color: Colors.green, size: 48),
+              const SizedBox(height: 20),
+              Text(
+                "Auth Code:\n$_authCode",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (_error != null) ...[
+              Icon(Icons.error, color: Colors.red[700], size: 48),
+              const SizedBox(height: 20),
+              Text(
+                _error!,
+                style: TextStyle(color: Colors.red[700]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _error = null;
+                  _isLoading = true;
+                  _authCode = null;
+                });
+                _launchBrowser();
+              },
+              child: const Text("Retry Login"),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            "assets/google.svg",
-            height: 24,
-            width: 24,
-          ),
-          const SizedBox(width: 12),
-          _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text(
-                  'Sign in with Google',
-                  style: TextStyle(fontSize: 16),
-                ),
-        ],
       ),
     );
   }

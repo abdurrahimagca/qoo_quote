@@ -2,11 +2,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
-import 'package:qoo_quote/screens/createPage.dart';
+import 'package:qoo_quote/screens/create_screen.dart';
 import 'package:qoo_quote/screens/home_page.dart';
-import 'package:qoo_quote/screens/userPage.dart';
-import 'package:qoo_quote/screens/searchPage.dart';
+import 'package:qoo_quote/screens/login.dart';
+import 'package:qoo_quote/screens/profile.dart';
+import 'package:qoo_quote/screens/search_screen.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -22,13 +24,35 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final List<Widget> _pages = const [
     HomePage(),
     Createpage(),
-    Userpage(),
+    ProfilePage(),
   ];
 
   // Arama overlay kontrolü için
   bool _showSearchOverlay = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+
+  // Add storage instance
+  final _storage = const FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAccessToken();
+  }
+
+  Future<void> _checkAccessToken() async {
+    try {
+      final token = await _storage.read(key: 'access-token');
+      if (token != null) {
+        debugPrint('Access Token found: $token');
+      } else {
+        debugPrint('No access token found in secure storage');
+      }
+    } catch (e) {
+      debugPrint('Error reading access token: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -72,6 +96,57 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _showLogoutDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Çıkış Yap',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Çıkış yapmak istediğinize emin misiniz?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text(
+                'İptal',
+                style: TextStyle(color: Colors.grey),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Çıkış Yap',
+                style: TextStyle(color: Colors.red[300]),
+              ),
+              onPressed: () async {
+                // Clear the access token
+                await _storage.deleteAll();
+
+                // Restart app from login page
+                if (mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => LoginPage(),
+                    ),
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,11 +160,30 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         ),
         centerTitle: false,
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.settings),
-            color: Colors.white,
-          )
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            color: Colors.grey[900],
+            onSelected: (value) {
+              if (value == 'logout') {
+                _showLogoutDialog();
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red[300]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Çıkış Yap',
+                      style: TextStyle(color: Colors.red[300]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Stack(

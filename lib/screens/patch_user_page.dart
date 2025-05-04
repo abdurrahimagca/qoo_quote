@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/features/auth/components/select_username.dart';
-import 'package:qoo_quote/screens/testPage.dart';
+import 'package:qoo_quote/screens/main_screen.dart';
 
 class PatchUserPage extends StatelessWidget {
   const PatchUserPage({super.key});

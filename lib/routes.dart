@@ -3,6 +3,6 @@ import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/login.dart';
 
 final Map<String, WidgetBuilder> routes = {
-  '/login': (context) => const LoginPage(),
+  '/login': (context) => LoginPage(),
   '/home': (context) => const HomePage(),
 };

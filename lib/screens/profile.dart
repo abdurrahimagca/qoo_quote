@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
-import 'package:qoo_quote/screens/searchPage.dart';
+import 'package:qoo_quote/screens/search_screen.dart';
+
 //please do not use these kind of wrong types
 //it is not a bad practice
 //what we're building is NOT A KINDLE
@@ -23,14 +24,14 @@ class UserPost {
   });
 }
 
-class Userpage extends StatefulWidget {
-  const Userpage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  State<Userpage> createState() => _UserpageState();
+  State<ProfilePage> createState() => _UserpageState();
 }
 
-class _UserpageState extends State<Userpage>
+class _UserpageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;

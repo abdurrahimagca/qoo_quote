@@ -2,9 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
+import 'package:qoo_quote/features/auth/components/login_or_signup_button.dart';
+import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/main_screen.dart';
+import 'package:qoo_quote/screens/patch_user_page.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -34,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void startAnimation() {
-    Timer.periodic(Duration(milliseconds: 150), (timer) {
+    Timer.periodic(const Duration(milliseconds: 150), (timer) {
       if (!mounted) return; // `mounted` kontrolü eklendi
       setState(() {
         if (isTyping) {
@@ -43,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
           } else {
             // Yazı bittiğinde silmeye başlamadan önce bir süre bekle
             isTyping = false;
-            Future.delayed(Duration(seconds: 1), () {
+            Future.delayed(const Duration(seconds: 1), () {
               if (mounted) {
                 setState(() {
                   isDeleting = true;
@@ -78,35 +83,46 @@ class _LoginPageState extends State<LoginPage> {
               SvgPicture.asset(
                 "assets/appicon.svg",
                 height: 150,
-              ), // Logo kısmı için bir ikon
-              SizedBox(height: 50),
+              ),
+              const SizedBox(height: 50),
               Text(
                 currentText,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 200),
-              Container(
+              const SizedBox(height: 200),
+              SizedBox(
                 width: 255,
                 height: 55,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (context) => MyHomePage()));
+                child: LoginOrSignupButton(
+                  onLoginSuccess: (String authCode, bool isNewUser) {
+                    if (isNewUser) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PatchUserPage(),
+                        ),
+                      );
+                    } else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyHomePage(),
+                        ),
+                      );
+                    }
                   },
-                  icon: SvgPicture.asset("assets/google.svg"),
-                  label: Text(
-                    'Google ile giriş yap',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    textStyle: TextStyle(fontSize: 18),
-                  ),
+                  onLoginError: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Login failed. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

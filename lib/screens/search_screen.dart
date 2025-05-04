@@ -29,6 +29,7 @@ class UserItem {
 class _SearchPageState extends State<SearchPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
 
   // Add this list to store sample users
@@ -44,12 +45,17 @@ class _SearchPageState extends State<SearchPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -127,6 +133,7 @@ class _SearchPageState extends State<SearchPage>
               ),
               child: TextField(
                 controller: _searchController,
+                focusNode: _searchFocusNode,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'keyword',

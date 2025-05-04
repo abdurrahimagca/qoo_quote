@@ -67,7 +67,7 @@ class _UserpageState extends State<ProfilePage>
               SliverAppBar(
                 backgroundColor: AppColors.background,
                 expandedHeight:
-                    220, // TabBar'ın bittiği yerde kalması için düşürüldü
+                    250, // TabBar'ın bittiği yerde kalması için düşürüldü
                 floating: false,
                 pinned: false,
                 flexibleSpace: FlexibleSpaceBar(
@@ -79,14 +79,14 @@ class _UserpageState extends State<ProfilePage>
                           MainAxisAlignment.end, // Aşağıda hizalama
                       children: [
                         const CircleAvatar(
-                          radius: 45, // Biraz küçültüldü
+                          radius: 60, // Biraz küçültüldü
                           backgroundImage: CachedNetworkImageProvider(
                             "https://picsum.photos/200",
                           ),
                         ),
                         const SizedBox(height: 20), // Azaltıldı
                         const Text(
-                          "@username",
+                          "USERNAME",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18, // Biraz küçültüldü

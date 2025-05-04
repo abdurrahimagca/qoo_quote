@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
+import 'package:qoo_quote/widgets/button.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 //please do not use these kind of wrong types
 //it is not a bad practice
@@ -65,28 +67,62 @@ class _UserpageState extends State<UserPage>
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return [
               SliverAppBar(
+                leading: IconButton(
+                  icon: const FaIcon(
+                    FontAwesomeIcons.chevronLeft,
+                    color: Colors.white,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                actions: [
+                  OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        users[0].isFollowing = !users[0].isFollowing;
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: users[0].isFollowing
+                            ? Colors.grey
+                            : AppColors.secondary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: Text(
+                      users[0].isFollowing ? 'Takip' : 'Takip Et',
+                      style: TextStyle(
+                        color: users[0].isFollowing
+                            ? Colors.grey
+                            : AppColors.secondary,
+                      ),
+                    ),
+                  ),
+                ],
                 backgroundColor: AppColors.background,
                 expandedHeight:
-                    220, // TabBar'ın bittiği yerde kalması için düşürüldü
+                    300, // TabBar'ın bittiği yerde kalması için düşürüldü
                 floating: false,
                 pinned: false,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 20.0, vertical: 15.0),
                     child: Column(
                       mainAxisAlignment:
                           MainAxisAlignment.end, // Aşağıda hizalama
                       children: [
                         const CircleAvatar(
-                          radius: 45, // Biraz küçültüldü
+                          radius: 60, // Biraz küçültüldü
                           backgroundImage: CachedNetworkImageProvider(
-                            "https://picsum.photos/200",
+                            "https://picsum.photos/300",
                           ),
                         ),
-                        const SizedBox(height: 20), // Azaltıldı
+                        const SizedBox(height: 20),
                         const Text(
-                          "@username",
+                          "Username",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18, // Biraz küçültüldü

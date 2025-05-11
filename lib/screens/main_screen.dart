@@ -9,6 +9,7 @@ import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/login.dart';
 import 'package:qoo_quote/screens/profile.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
+import 'package:qoo_quote/services/rest_services/auth_service.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -34,11 +35,47 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   // Add storage instance
   final _storage = const FlutterSecureStorage();
+  final _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
+    _checkAuth();
+    _checkTokens();
     _checkAccessToken();
+  }
+
+  Future<void> _checkAuth() async {
+    try {
+      final authCode = await _storage.read(key: 'auth_code');
+      if (authCode != null) {
+        debugPrint('Auth Code: $authCode');
+
+        // Try to exchange the auth code
+        try {
+          final tokens = await _authService.exchangeToken(authCode);
+          debugPrint(
+              'Exchange successful - Access Token: ${tokens['accessToken']}');
+          debugPrint(
+              'Exchange successful - Refresh Token: ${tokens['refreshToken']}');
+        } catch (e) {
+          debugPrint('Token exchange error: $e');
+        }
+      } else {
+        debugPrint('No auth code found in secure storage');
+      }
+    } catch (e) {
+      debugPrint('Error checking auth: $e');
+    }
+  }
+
+  Future<void> _checkTokens() async {
+    try {
+      final refreshToken = await _storage.read(key: 'refresh-token');
+      debugPrint('Refresh Token: $refreshToken');
+    } catch (e) {
+      debugPrint('Error reading refresh token: $e');
+    }
   }
 
   Future<void> _checkAccessToken() async {

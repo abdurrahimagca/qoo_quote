@@ -20,7 +20,7 @@ Future<void> main() async {
 
   // Check for access token
   const storage = FlutterSecureStorage();
-  final String? token = await storage.read(key: 'access-token');
+  final String? token = await storage.read(key: 'refresh-token');
 
   runApp(
     MaterialApp(

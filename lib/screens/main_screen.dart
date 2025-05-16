@@ -3,12 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/create_screen.dart';
 import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/login.dart';
 import 'package:qoo_quote/screens/profile.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
+import 'package:qoo_quote/screens/settings/settings.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -160,30 +162,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         ),
         centerTitle: false,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            color: Colors.grey[900],
-            onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog();
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red[300]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Çıkış Yap',
-                      style: TextStyle(color: Colors.red[300]),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsScreen(),
+                  ),
+                );
+              },
+              icon: FaIcon(FontAwesomeIcons.bars, color: Colors.white70)),
         ],
       ),
       body: Stack(

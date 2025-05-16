@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'package:flutter/material.dart';
+import 'package:qoo_quote/screens/login.dart';
 import 'base_service.dart';
 
 class AuthService extends BaseApiService {
@@ -41,5 +42,26 @@ class AuthService extends BaseApiService {
       'accessToken': access,
       'refreshToken': refresh,
     };
+  }
+
+  static Future<void> logout(BuildContext context) async {
+    const storage = FlutterSecureStorage();
+
+    // Token'ları temizle
+    await storage.deleteAll();
+
+    // Uygulamayı baştan başlat
+    if (context.mounted) {
+      // Tüm route stack'i temizle ve login sayfasına yönlendir
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => LoginPage(),
+        ),
+        (route) => false,
+      );
+
+      // Alternatif olarak main sayfasına da yönlendirebilirsiniz
+      // Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
   }
 }

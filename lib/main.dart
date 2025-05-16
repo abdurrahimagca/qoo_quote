@@ -5,9 +5,13 @@ import 'package:qoo_quote/screens/main_screen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:qoo_quote/services/graphql_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await initHiveForFlutter();
 
   // SQLite initialization
   sqfliteFfiInit();
@@ -22,14 +26,19 @@ Future<void> main() async {
   const storage = FlutterSecureStorage();
   final String? token = await storage.read(key: 'refresh-token');
 
+  final client = await GraphQLService.initializeClient();
+
   runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Qoo Quote',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    GraphQLProvider(
+      client: client,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Qoo Quote',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: token != null ? const MyHomePage() : LoginPage(),
       ),
-      home: token != null ? const MyHomePage() : LoginPage(),
     ),
   );
 }

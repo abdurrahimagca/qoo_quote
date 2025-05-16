@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
+import 'package:qoo_quote/services/graphql_service.dart';
 
 //please do not use these kind of wrong types
 //it is not a bad practice
@@ -35,6 +36,17 @@ class _UserpageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
+  bool _isready = false;
+
+  // Me değişkenleri
+  int? _age;
+  String? _gender;
+  String? _id;
+  bool? _isPrivate;
+  String? _name;
+  String? _profilePictureUrl;
+  String? _username;
+
   final List<UserItem> users = List.generate(
     10,
     (index) => UserItem(
@@ -52,78 +64,102 @@ class _UserpageState extends State<ProfilePage>
       initialIndex: 1, // POSTS sekmesinden başlaması için
     );
     _scrollController = ScrollController();
+
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final me = await GraphQLService.getMe();
+    if (me != null) {
+      setState(() {
+        _age = me.age;
+        _gender = me.gender;
+        _id = me.id;
+        _isPrivate = me.isPrivate;
+        _name = me.name;
+        _profilePictureUrl = me.profilePictureUrl;
+        _username = me.username;
+
+        // Veriler yüklendiğinde durumu güncelle
+      });
+    }
+    _isready = true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: DefaultTabController(
-        length: 3,
-        child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                backgroundColor: AppColors.background,
-                expandedHeight:
-                    250, // TabBar'ın bittiği yerde kalması için düşürüldü
-                floating: false,
-                pinned: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.end, // Aşağıda hizalama
-                      children: [
-                        const CircleAvatar(
-                          radius: 60, // Biraz küçültüldü
-                          backgroundImage: CachedNetworkImageProvider(
-                            "https://picsum.photos/200",
-                          ),
-                        ),
-                        const SizedBox(height: 20), // Azaltıldı
-                        const Text(
-                          "USERNAME",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18, // Biraz küçültüldü
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TabBar(
-                          controller: _tabController,
-                          dividerColor: Colors.transparent,
-                          indicatorColor: AppColors.primary,
-                          labelColor: AppColors.primary, // Seçili tab rengi
+        backgroundColor: AppColors.background,
+        body: _isready
+            ? DefaultTabController(
+                length: 3,
+                child: NestedScrollView(
+                  controller: _scrollController,
+                  headerSliverBuilder:
+                      (BuildContext context, bool innerBoxIsScrolled) {
+                    return [
+                      SliverAppBar(
+                        backgroundColor: AppColors.background,
+                        expandedHeight:
+                            250, // TabBar'ın bittiği yerde kalması için düşürüldü
+                        floating: false,
+                        pinned: false,
+                        flexibleSpace: FlexibleSpaceBar(
+                          background: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 8.0),
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.end, // Aşağıda hizalama
+                              children: [
+                                CircleAvatar(
+                                  radius: 60, // Biraz küçültüldü
+                                  backgroundImage: CachedNetworkImageProvider(
+                                    _profilePictureUrl ??
+                                        "https://picsum.photos/200",
+                                  ),
+                                ),
+                                const SizedBox(height: 20), // Azaltıldı
+                                Text(
+                                  _username ?? "USERNAME",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18, // Biraz küçültüldü
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TabBar(
+                                  controller: _tabController,
+                                  dividerColor: Colors.transparent,
+                                  indicatorColor: AppColors.primary,
+                                  labelColor:
+                                      AppColors.primary, // Seçili tab rengi
 
-                          tabs: const [
-                            Tab(text: "TAKİP"),
-                            Tab(text: "PROFİL"),
-                            Tab(text: "TAKİPÇİ"),
-                          ],
+                                  tabs: const [
+                                    Tab(text: "TAKİP"),
+                                    Tab(text: "PROFİL"),
+                                    Tab(text: "TAKİPÇİ"),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ];
+                  },
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildUserList(users),
+                      _buildPostsList(),
+                      _buildUserList(users),
+                    ],
                   ),
                 ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildUserList(users),
-              _buildPostsList(),
-              _buildUserList(users),
-            ],
-          ),
-        ),
-      ),
-    );
+              )
+            : Center(child: CircularProgressIndicator()));
   }
 
   @override

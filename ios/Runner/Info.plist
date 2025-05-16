@@ -88,6 +88,7 @@
 	<array>
 		<string>http</string>
 		<string>https</string>
+		<string>qoo-quote</string>
 	</array>
 </dict>
 </plist>

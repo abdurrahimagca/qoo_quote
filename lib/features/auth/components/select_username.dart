@@ -1,10 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/services/gql/user_service.dart';
 
 class SelectUsername extends StatefulWidget {
-  SelectUsername({super.key});
+  final Function(String) onUsernameChanged;
+
+  SelectUsername({
+    Key? key,
+    required this.onUsernameChanged,
+  }) : super(key: key);
+
   final _logger = Logger();
   @override
   State<SelectUsername> createState() => _SelectUsernameState();
@@ -22,6 +29,7 @@ class _SelectUsernameState extends State<SelectUsername> {
 
     _controller.addListener(() {
       final text = _controller.text.trim();
+      widget.onUsernameChanged(text);
 
       if (_debounce?.isActive ?? false) _debounce!.cancel();
       _debounce = Timer(const Duration(milliseconds: 500), () async {
@@ -55,9 +63,22 @@ class _SelectUsernameState extends State<SelectUsername> {
           height: 50,
           child: TextField(
             controller: _controller,
-            decoration: const InputDecoration(
-              labelText: 'Select a username',
-              border: OutlineInputBorder(),
+            style: const TextStyle(
+                color: Colors.white), // Metin rengi beyaz olacak
+            decoration: InputDecoration(
+              hintText: ' Kullanıcı adı',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide:
+                    BorderSide(color: AppColors.secondary.withOpacity(0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: AppColors.secondary),
+              ),
+              filled: true,
+              fillColor: Colors.grey[900],
             ),
           ),
         ),

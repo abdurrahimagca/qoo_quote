@@ -62,6 +62,7 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
     final isNewUser = uri.queryParameters["is_new_user"] == "true";
     _logger.d("Auth code: $authCode");
     _logger.d("Is new user: $isNewUser");
+    debugPrint("Auth code: $authCode");
 
     if (authCode == null) {
       _logger.e("No auth code found in URI");
@@ -73,6 +74,8 @@ class _LoginOrSignupButtonState extends State<LoginOrSignupButton> {
       final tokens = await authService.exchangeToken(authCode);
       final access = tokens['accessToken']?.toString();
       final refresh = tokens['refreshToken']?.toString();
+      debugPrint("Access token: $access");
+      debugPrint("Refresh token: $refresh");
 
       const storage = FlutterSecureStorage();
       await storage.write(key: "access-token", value: access);

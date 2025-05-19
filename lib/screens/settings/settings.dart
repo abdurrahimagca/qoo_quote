@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/login.dart';
 import 'package:qoo_quote/screens/patch_user_page.dart';
+import 'package:qoo_quote/screens/settings/test.dart';
 import 'package:qoo_quote/screens/settings/username_update.dart';
 import 'package:qoo_quote/services/graphql_service.dart';
 import 'package:qoo_quote/services/rest_services/auth_service.dart';
@@ -63,81 +64,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final XFile? pickedFile =
         await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      // Fotoğrafı kırp
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Fotoğrafı Düzenle',
-            toolbarColor: AppColors.background,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Fotoğrafı Düzenle',
-            aspectRatioLockEnabled: true,
-            minimumAspectRatio: 1.0,
-          ),
-        ],
-      );
+    if (pickedFile == null) return;
 
-      if (croppedFile != null) {
-        try {
-          // Fotoğrafı base64'e çevir
-          final bytes = await File(croppedFile.path).readAsBytes();
-          final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    // Fotoğrafı kırp
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: pickedFile.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Profil Fotoğrafını Düzenle',
+          toolbarColor: AppColors.background,
+          toolbarWidgetColor: Colors.white,
+          backgroundColor: AppColors.background,
+          activeControlsWidgetColor: AppColors.primary,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Profil Fotoğrafını Düzenle',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
 
-          // GraphQL mutation
-          const String mutation = r'''
-            mutation UpdateUserSettings($deprecatedPofilePicture: String!) {
-              deprecatedPatchUser(deprecatedPofilePicture: $deprecatedPofilePicture) {
-                id
-                profilePictureUrl
-              }
-            }
-          ''';
+    if (croppedFile == null) return;
 
-          final client = await GraphQLService.initializeClient();
-
-          final MutationOptions options = MutationOptions(
-            document: gql(mutation),
-            variables: {
-              'deprecatedPofilePicture': base64Image,
-            },
-          );
-
-          final result = await client.value.mutate(options);
-
-          if (result.hasException) {
-            throw result.exception!;
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profil fotoğrafı başarıyla güncellendi'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-        } catch (e) {
-          // Hata mesajını debug konsoluna yazdır
-          debugPrint('Profil fotoğrafı güncelleme hatası: $e');
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Hata oluştu: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    }
+    // Kırpılmış fotoğrafı yükle
+    await GraphQLService.updateProfilePhoto(await croppedFile.readAsBytes());
   }
 
   @override
@@ -178,6 +132,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 );
               },
+            ),
+            _buildSettingItem(
+              icon: Icons.error,
+              title: 'Test Sayfasına git',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TestPage(),
+                  ),
+                );
+              },
+              isDestructive: true,
             ),
             const SizedBox(height: 16),
             _buildSettingItem(

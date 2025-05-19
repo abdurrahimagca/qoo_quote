@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
 import 'package:qoo_quote/services/graphql_service.dart';
+import 'package:qoo_quote/widgets/list_builders/profile_posts.dart';
 
 //please do not use these kind of wrong types
 //it is not a bad practice
@@ -37,6 +38,7 @@ class _UserpageState extends State<ProfilePage>
   late TabController _tabController;
   late ScrollController _scrollController;
   bool _isready = false;
+  bool _refreshPosts = false;
 
   // Me değişkenleri
   int? _age;
@@ -153,7 +155,7 @@ class _UserpageState extends State<ProfilePage>
                     controller: _tabController,
                     children: [
                       _buildUserList(users),
-                      _buildPostsList(),
+                      BuildProfilePosts(),
                       _buildUserList(users),
                     ],
                   ),
@@ -216,189 +218,6 @@ class _UserpageState extends State<ProfilePage>
                 ),
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInteractionButton(IconData icon, String count, Color color) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: 24,
-        ),
-        if (count.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text(
-            count,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildPostsList() {
-    return ListView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: 10, // Example post count
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.zero,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Profile Header
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.secondary,
-                          width: 2,
-                        ),
-                      ),
-                      child: const CircleAvatar(
-                        backgroundImage:
-                            NetworkImage("https://picsum.photos/200"),
-                        radius: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "USERNAME",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withOpacity(0.95),
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton(
-                      icon: Icon(
-                        Icons.more_horiz,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      color: Colors.grey[850],
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          child: Row(
-                            children: [
-                              const Icon(Icons.bookmark_border,
-                                  color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Kaydet",
-                                style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9)),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          child: Row(
-                            children: [
-                              const Icon(Icons.flag_outlined,
-                                  color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Şikayet Et",
-                                style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Quote Image
-              ClipRRect(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          'https://picsum.photos/400',
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.5),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Interaction Buttons
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    _buildInteractionButton(
-                      Icons.favorite_border,
-                      "128",
-                      Colors.pink[300]!,
-                    ),
-                    const SizedBox(width: 16),
-                    _buildInteractionButton(
-                      Icons.chat_bubble_outline,
-                      "24",
-                      Colors.blue[300]!,
-                    ),
-                    const Spacer(),
-                    _buildInteractionButton(
-                      Icons.bookmark_border,
-                      "",
-                      Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         );
       },

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
+import 'package:qoo_quote/services/graphql_service.dart';
 
 class SearchPage extends StatefulWidget {
   final String initialQuery;
@@ -32,23 +33,60 @@ class _SearchPageState extends State<SearchPage>
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
 
-  // Add this list to store sample users
-  final List<UserItem> users = List.generate(
-    10,
-    (index) => UserItem(
-      username: "user.${index + 1}",
-      profileImage: "https://picsum.photos/200",
-    ),
-  );
+  List<UserItem> users = [];
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _searchController.text = widget.initialQuery;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
+      if (widget.initialQuery.isNotEmpty) {
+        _searchUsers(widget.initialQuery);
+      }
     });
+
+    // Add listener to search controller
+    _searchController.addListener(() {
+      final query = _searchController.text;
+      if (query.isNotEmpty) {
+        _searchUsers(query);
+      } else {
+        setState(() {
+          users = [];
+        });
+      }
+    });
+  }
+
+  Future<void> _searchUsers(String query) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final results = await GraphQLService.findUsers(query);
+      if (results != null) {
+        setState(() {
+          users = results
+              .map((user) => UserItem(
+                    username: user['username'] as String,
+                    profileImage: user['profilePictureUrl'] as String? ??
+                        'https://picsum.photos/200',
+                  ))
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error searching users: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -172,7 +210,13 @@ class _SearchPageState extends State<SearchPage>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildUserList(users),
+                  isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.secondary,
+                          ),
+                        )
+                      : _buildUserList(users),
                   // Posts Tab
                   const Center(
                     child: Text(

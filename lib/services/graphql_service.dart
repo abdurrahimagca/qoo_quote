@@ -2,9 +2,14 @@ import 'package:flutter/widgets.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:qoo_quote/services/models/me_model.dart';
+import 'package:qoo_quote/services/models/signed_url_response.dart';
+import 'package:http/http.dart' as http;
 
 class GraphQLService {
   static ValueNotifier<GraphQLClient>? _client;
+  static const String BASE_IMAGE_URL =
+      'https://qq-bucket.homelab-kaleici.space/';
 
   static Future<ValueNotifier<GraphQLClient>> initializeClient() async {
     if (_client != null) return _client!;
@@ -77,15 +82,6 @@ class GraphQLService {
           UserMe.fromJson(result.data!['me'] as Map<String, dynamic>);
 
       // Debug konsola yazdırma
-      debugPrint('User Data:');
-      debugPrint('ID: ${userData.id}');
-      debugPrint('Username: ${userData.username}');
-      debugPrint('Name: ${userData.name}');
-      debugPrint('Age: ${userData.age}');
-      debugPrint('Gender: ${userData.gender}');
-      debugPrint('Is Private: ${userData.isPrivate}');
-      debugPrint('Profile Picture URL: ${userData.profilePictureUrl}');
-      debugPrint('------------------------');
 
       return userData;
     } catch (e) {
@@ -93,36 +89,447 @@ class GraphQLService {
       return null;
     }
   }
-}
 
-class UserMe {
-  final String id;
-  final int? age;
-  final String? gender;
-  final bool isPrivate;
-  final String? name;
-  final String? profilePictureUrl;
-  final String username;
+  static Future<SignedUrlResponse?> getSignedImageUploadUrl() async {
+    const String query = r'''
+      query GetSignedImageUploadPutUrl {
+        getSignedImageUploadPutUrl {
+          url
+          key
+        }
+      }
+    ''';
 
-  UserMe({
-    required this.id,
-    this.age,
-    this.gender,
-    required this.isPrivate,
-    this.name,
-    this.profilePictureUrl,
-    required this.username,
-  });
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
 
-  factory UserMe.fromJson(Map<String, dynamic> json) {
-    return UserMe(
-      id: json['id'] as String,
-      age: json['age'] as int?,
-      gender: json['gender'] as String?,
-      isPrivate: json['isPrivate'] as bool,
-      name: json['name'] as String?,
-      profilePictureUrl: json['profilePictureUrl'] as String?,
-      username: json['username'] as String,
-    );
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error getting signed URL: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null ||
+          result.data!['getSignedImageUploadPutUrl'] == null) {
+        return null;
+      }
+
+      return SignedUrlResponse.fromJson(
+          result.data!['getSignedImageUploadPutUrl'] as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('Error getting signed URL: $e');
+      return null;
+    }
+  }
+
+  static Future<String?> uploadImage(List<int> imageBytes) async {
+    try {
+      // 1. Signed URL al
+      final signedUrlResponse = await getSignedImageUploadUrl();
+      if (signedUrlResponse == null) {
+        debugPrint('Signed URL alınamadı');
+        return null;
+      }
+
+      // 2. Image'i PUT request ile yükle
+      final response = await http.put(
+        Uri.parse(signedUrlResponse.url),
+        body: imageBytes,
+        headers: {
+          'Content-Type': 'image/jpeg',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Image yükleme hatası: ${response.statusCode}');
+        return null;
+      }
+
+      // Use the key directly from the response
+      final key = signedUrlResponse.key;
+
+      // 4. Tam image URL'ini oluştur
+      final fullImageUrl = BASE_IMAGE_URL + key;
+      debugPrint('Image başarıyla yüklendi: $fullImageUrl');
+      return fullImageUrl;
+    } catch (e) {
+      debugPrint('Image yükleme hatası: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> updateProfilePhoto(List<int> imageBytes) async {
+    try {
+      // 1. Önce resmi yükle
+      final uploadedImageUrl = await uploadImage(imageBytes);
+      if (uploadedImageUrl == null) {
+        debugPrint('Resim yüklenemedi');
+        return false;
+      }
+
+      // 2. Mutation tanımla
+      const String mutation = r'''
+        mutation PatchUser($input: UpdateUserInput!) {
+          patchUser(input: $input) {
+            profilePictureUrl
+            isPrivate
+            id
+            username
+          }
+        }
+      ''';
+
+      // 3. Mutation'ı çalıştır
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'input': {
+              'profilePictureUrl': uploadedImageUrl,
+            },
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Profil fotoğrafı güncelleme hatası: ${result.exception}');
+        return false;
+      }
+
+      debugPrint('Profil fotoğrafı başarıyla güncellendi');
+      return true;
+    } catch (e) {
+      debugPrint('Profil fotoğrafı güncelleme hatası: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> searchBooks(String query) async {
+    const String searchQuery = r'''
+      query SearchBooks($query: String!) {
+        searchBooks(query: $query) {
+          items {
+            contributors {
+              id
+              name
+            }
+            imageUrls
+            title
+            postSourceIdentifier
+            type
+          }
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(searchQuery),
+          variables: {'query': query},
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error searching books: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null || result.data!['searchBooks'] == null) {
+        debugPrint('No books found');
+        return null;
+      }
+
+      // Debug konsola yazdırma
+      final searchResults =
+          result.data!['searchBooks']['items'] as List<dynamic>;
+
+      for (var book in searchResults) {
+        if (book['contributors'] != null) {
+          for (var contributor in book['contributors'] as List<dynamic>) {}
+        }
+        debugPrint('-------------------------');
+      }
+
+      return result.data!['searchBooks'] as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error in book search: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> createPost({
+    required List<int> imageBytes,
+    required String postText,
+    required String title,
+    required String postType,
+    required String contributorId,
+    required String contributorName,
+    required String postSourceIdentifier,
+  }) async {
+    try {
+      // 1. Upload image and get URL
+      final imageUrl = await uploadImage(imageBytes);
+      if (imageUrl == null) {
+        debugPrint('Image upload failed');
+        return false;
+      }
+
+      // 2. Create post mutation
+      const String mutation = r'''
+        mutation CreatePost($input: CreatePostInput!) {
+          createPost(input: $input) {
+            id
+            title
+            postText
+            imageUrl
+            postType
+            contributors {
+              id
+              name
+            }
+         
+          }
+        }
+      ''';
+
+      // 3. Execute mutation
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'input': {
+              'contributors': [
+                {'name': contributorName, 'id': contributorId}
+              ],
+              'imageUrl': imageUrl,
+              'postText': postText,
+              'postType': postType,
+              'title': title,
+              'postSourceIdentifier': postSourceIdentifier,
+              'metaData': []
+            }
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Post creation error: ${result.exception}');
+        return false;
+      }
+
+      final postData = result.data?['createPost'];
+      debugPrint('Post created successfully:');
+      debugPrint('ID: ${postData['id']}');
+      debugPrint('Title: ${postData['title']}');
+      debugPrint('Text: ${postData['postText']}');
+      debugPrint('Type: ${postData['postType']}');
+      debugPrint('Image URL: ${postData['imageUrl']}');
+      debugPrint('Contributors: ${postData['contributors']}');
+      debugPrint('-------------------------');
+
+      return true;
+    } catch (e) {
+      debugPrint('Error creating post: $e');
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>?> findUsers(String searchText) async {
+    const String query = r'''
+      query FindUsersByNameOrUsername($name: String!) {
+        findUsersByNameOrUsername(name: $name) {
+          id
+          username
+          name
+          profilePictureUrl
+          isPrivate
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {'name': searchText},
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error searching users: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null ||
+          result.data!['findUsersByNameOrUsername'] == null) {
+        debugPrint('No users found');
+        return null;
+      }
+
+      final users = result.data!['findUsersByNameOrUsername'] as List<dynamic>;
+
+      // Debug konsola yazdırma
+      debugPrint('Found Users:');
+      debugPrint('-------------------------');
+      for (var user in users) {
+        debugPrint('ID: ${user['id']}');
+        debugPrint('Username: ${user['username']}');
+        debugPrint('Name: ${user['name']}');
+        debugPrint('Profile Picture: ${user['profilePictureUrl']}');
+        debugPrint('Is Private: ${user['isPrivate']}');
+        debugPrint('-------------------------');
+      }
+
+      return users;
+    } catch (e) {
+      debugPrint('Error searching users: $e');
+      return null;
+    }
+  }
+
+  static Future<List<dynamic>?> profilePosts() async {
+    try {
+      // Önce kullanıcı bilgilerini al
+      final userData = await getMe();
+      if (userData == null) {
+        debugPrint('User data not found');
+        return null;
+      }
+
+      const String query = r'''
+        query Author {
+          userPosts {
+            author {
+              username
+              profilePictureUrl
+            }
+            postText
+            title
+            updatedAt
+            postType
+            imageUrl
+            id
+            createdAt
+            contributors {
+              name
+              id
+            }
+          }
+        }
+      ''';
+
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error fetching user posts: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null || result.data!['userPosts'] == null) {
+        debugPrint('No posts found');
+        return null;
+      }
+
+      final posts = result.data!['userPosts'] as List<dynamic>;
+
+      return posts;
+    } catch (e) {
+      debugPrint('Error fetching user posts: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> deletePost(String postId) async {
+    try {
+      const String mutation = r'''
+        mutation DeletePost($deletePostId: String!) {
+          deletePost(id: $deletePostId)
+        }
+      ''';
+
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'deletePostId': postId,
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Post deletion error: ${result.exception}');
+        return false;
+      }
+
+      debugPrint('Post deleted successfully');
+      return result.data?['deletePost'] ?? false;
+    } catch (e) {
+      debugPrint('Error deleting post: $e');
+      return false;
+    }
+  }
+
+  static Future<int> getLikesCount(String postId) async {
+    const String query = r'''
+      query GetPostLikes($postId: String!) {
+        getLikesCount(postId: $postId)
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {'postId': postId},
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error fetching likes count: ${result.exception}');
+        throw result.exception!;
+      }
+
+      return result.data?['getLikesCount'] as int? ?? 0;
+    } catch (e) {
+      debugPrint('Error getting likes count: $e');
+      return 0;
+    }
   }
 }

@@ -79,70 +79,6 @@ class _UpdatePhotoState extends State<UpdatePhoto> {
     }
   }
 
-  Future<void> _updateUserSettings() async {
-    if (_imageFile == null || _username == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Profil fotoğrafı ve kullanıcı adı gerekli')),
-      );
-      return;
-    }
-
-    try {
-      // Fotoğrafı base64'e çevir ve format prefix'i ekle
-      final bytes = await _imageFile!.readAsBytes();
-      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-
-      const String mutation = r'''
-        mutation UpdateUserSettings($name: String, $age: Float, $gender: String, $isPrivate: Boolean, $username: String, $deprecatedPofilePicture: String) {
-          deprecatedPatchUser(name: $name, age: $age, gender: $gender, isPrivate: $isPrivate, username: $username, deprecatedPofilePicture: $deprecatedPofilePicture) {
-            age
-            gender
-            id
-            isPrivate
-            name
-            profilePictureUrl
-            username
-          }
-        }
-      ''';
-
-      final client = await GraphQLService.initializeClient();
-
-      final MutationOptions options = MutationOptions(
-        document: gql(mutation),
-        variables: {
-          'name': _name,
-          'age': _age?.toDouble(),
-          'gender': _gender,
-          'isPrivate': _isPrivate ?? false,
-          'username': _username,
-          'deprecatedPofilePicture': base64Image, // Değişen parametre adı
-        },
-      );
-
-      final result = await client.value.mutate(options);
-
-      if (result.hasException) {
-        throw result.exception!;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil başarıyla güncellendi')),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyHomePage()),
-      );
-    } catch (e) {
-      debugPrint('Error updating user settings: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Güncelleme hatası: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,7 +158,12 @@ class _UpdatePhotoState extends State<UpdatePhoto> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _updateUserSettings,
+                onPressed: () async {
+                  if (_imageFile != null) {
+                    final bytes = await _imageFile!.readAsBytes();
+                    await GraphQLService.uploadImage(bytes);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),

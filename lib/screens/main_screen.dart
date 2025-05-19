@@ -25,7 +25,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   final List<Widget> _pages = const [
     HomePage(),
-    Createpage(),
+    CreateScreen(),
     ProfilePage(),
   ];
 
@@ -45,14 +45,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   Future<void> _checkAccessToken() async {
     try {
-      final token = await _storage.read(key: 'access-token');
+      final token = await _storage.read(key: 'refresh-token');
       if (token != null) {
-        debugPrint('Access Token found: $token');
+        debugPrint('Refresh Token found: $token');
       } else {
-        debugPrint('No access token found in secure storage');
+        debugPrint('No refresh token found in secure storage');
       }
     } catch (e) {
-      debugPrint('Error reading access token: $e');
+      debugPrint('Error reading refresh token: $e');
     }
   }
 
@@ -67,6 +67,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   void _onPageChanged(int index) {
     setState(() {
       _currentIndex = index;
+    });
+  }
+
+  void navigateToPage(int index) {
+    setState(() {
+      _currentIndex = index;
+      _pageController.jumpToPage(index);
     });
   }
 

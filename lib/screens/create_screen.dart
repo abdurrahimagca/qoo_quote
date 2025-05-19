@@ -1,330 +1,424 @@
 import 'package:flutter/material.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
-// ignore this file best thing u can do is start from scratch
-// what we expect ? :
-/*export const CreatePostSchema = z.object({
-  image: z.string().min(1).refine(validateBase64Image, {
-    message:
-      'Invalid image. Must be a base64 encoded JPEG, PNG, or WebP under 10MB',
-  }),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  postText: z.string(),
-  textInformation: TextInformationSchema.optional(),
-  backgroundInformation: BackgroundInformationSchema.optional(),
-  authorId: z.string().uuid(),
-  isFriendsOnly: z.boolean().optional(),
-  metaData: z.array(MetaDataSchema).optional().default([]),
-});*/
-// this is a very bad practice and should be avoided
+import 'package:qoo_quote/services/graphql_service.dart';
 
-class Book {
-  final String title;
-  final String author;
-  //no!
-  final String imageUrl;
-
-  Book({required this.title, required this.author, required this.imageUrl});
-}
-
-class Createpage extends StatefulWidget {
-  const Createpage({super.key});
+class CreateScreen extends StatefulWidget {
+  const CreateScreen({super.key});
 
   @override
-  State<Createpage> createState() => _CreatepageState();
+  State<CreateScreen> createState() => _TestPageState();
 }
 
-class _CreatepageState extends State<Createpage> {
-  List<Book> searchResults = [];
-  bool isLoading = false;
-  //we do not have ANY KIND OF BOOK LIMIT ON POSTS NEVER
-  //ONLY THING WE HAVE IS A MASSIVE AMOUNT OF TYPE ENUMS
+class _TestPageState extends State<CreateScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _postTextController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  File? _selectedImage;
+  List<Map<String, dynamic>> _searchResults = [];
+  Map<String, dynamic>? _selectedBook;
+  bool _isLoading = false;
 
-  Book? selectedBook;
-  File? selectedImage;
-  final TextEditingController quoteController = TextEditingController();
-  double fontSize = 40.0; // Varsayılan yazı boyutu
-  double opacity = 0.3; // Karartma opaklığı için yeni değişken
-
-  Future<void> searchBooks(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        searchResults = [];
-      });
-      return;
-    }
+  Future<void> _searchBooks(String query) async {
+    if (query.isEmpty) return;
 
     setState(() {
-      isLoading = true;
+      _isLoading = true;
     });
 
     try {
-      final response = await http.get(Uri.parse(
-          'https://www.googleapis.com/books/v1/volumes?q=$query&langRestrict=tr'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final items = data['items'] as List<dynamic>;
-
+      final results = await GraphQLService.searchBooks(query);
+      if (results != null) {
         setState(() {
-          searchResults = items.map((item) {
-            final volumeInfo = item['volumeInfo'];
-            //we would never took this information only if user gives
-            //this information to us
-            //we do not have any kind of book limit on posts
-            return Book(
-              title: volumeInfo['title'] ?? 'Başlık Bulunamadı',
-              author: (volumeInfo['authors'] as List<dynamic>?)?.first ??
-                  'Yazar Bilinmiyor',
-              imageUrl: volumeInfo['imageLinks']?['thumbnail'] ?? '',
-            );
-          }).toList();
+          _searchResults = (results['items'] as List<dynamic>)
+              .map((item) => item as Map<String, dynamic>)
+              .toList();
         });
       }
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error searching books: $e');
     } finally {
       setState(() {
-        isLoading = false;
+        _isLoading = false;
       });
     }
   }
 
-  Future<void> _pickAndCropImage() async {
+  Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
 
-    if (image != null) {
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: image.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        //u would never want to compress exact same image
+    if (pickedFile == null) return;
 
-        compressQuality: 100,
-        uiSettings: [
-          AndroidUiSettings(
-            //never use Turkish if u want to support many languages
-            //pls use i18n provider
-            toolbarTitle: 'Fotoğrafı Kırp',
-            toolbarColor: Colors.black,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Fotoğrafı Kırp',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        setState(() {
-          selectedImage = File(croppedFile.path);
-        });
-      }
-    }
-  }
-
-  Future<void> _saveImageWithQuote() async {
-    if (selectedImage == null || quoteController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen fotoğraf ve alıntı ekleyin')),
-      );
-      return;
-    }
-
-    // İzin kontrolü
-    final status = await Permission.storage.request();
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Galeriye kaydetmek için izin gerekiyor')),
-      );
-      return;
-    }
-
-    try {
-      // Fotoğrafı yükle
-      final ui.Image image =
-          await decodeImageFromList(selectedImage!.readAsBytesSync());
-
-      // Canvas oluştur
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final size = Size(image.width.toDouble(), image.height.toDouble());
-
-      // Fotoğrafı çiz
-      canvas.drawImage(image, Offset.zero, Paint());
-
-      // Karartma katmanı ekle
-      canvas.drawRect(
-        Offset.zero & size,
-        Paint()..color = Colors.black.withOpacity(opacity),
-      );
-
-      // Metni hazırla
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: quoteController.text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-          ),
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: pickedFile.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Fotoğrafı Düzenle',
+          toolbarColor: AppColors.background,
+          toolbarWidgetColor: Colors.white,
+          backgroundColor: AppColors.background,
+          activeControlsWidgetColor: AppColors.primary,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
         ),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
+        IOSUiSettings(
+          title: 'Fotoğrafı Düzenle',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
 
-      // Metin boyutunu hesapla ve ortala
-      textPainter.layout(maxWidth: size.width * 0.8);
-      final textPos = Offset(
-        (size.width - textPainter.width) / 2,
-        (size.height - textPainter.height) / 2,
-      );
-
-      // Metni çiz
-      textPainter.paint(canvas, textPos);
-
-      // Son görüntüyü oluştur
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(image.width, image.height);
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      final buffer = byteData!.buffer.asUint8List();
-
-      // Galeriye kaydet
-  } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bir hata oluştu')),
-      );
-      print(e);
+    if (croppedFile != null) {
+      setState(() {
+        _selectedImage = File(croppedFile.path);
+      });
     }
   }
 
-  Future<void> _showPreview() async {
-    if (selectedImage == null || quoteController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen fotoğraf ve alıntı ekleyin')),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Önizleme Resmi
-            AspectRatio(
-              aspectRatio: 1,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(
-                    selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(opacity),
-                    ),
-                  ),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        quoteController.text,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.bold,
+            // Search Bar
+            TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Kitap ara...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                suffixIcon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                if (value.length >= 3) {
+                  _searchBooks(value);
+                } else {
+                  setState(() {
+                    _searchResults = [];
+                  });
+                }
+              },
+            ),
+
+            // Selected Book
+            if (_selectedBook != null)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    if (_selectedBook!['imageUrls']?.isNotEmpty ?? false)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _selectedBook!['imageUrls'][0],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
                         ),
                       ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedBook!['title'] ?? 'Bilinmeyen Kitap',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_selectedBook!['contributors']?.isNotEmpty ??
+                              false)
+                            Text(
+                              _selectedBook!['contributors'][0]['name'] ?? '',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Ayarlar Bölümü
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: Colors.black54,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Yazı Boyutu',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  Slider(
-                    value: fontSize,
-                    min: 20,
-                    max: 60,
-                    divisions: 40,
-                    label: fontSize.round().toString(),
-                    onChanged: (value) {
-                      setState(() {
-                        fontSize = value;
-                      });
-                    },
-                  ),
-                  const Text(
-                    'Karartma',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  Slider(
-                    value: opacity,
-                    min: 0.0,
-                    max: 0.8,
-                    divisions: 16,
-                    label: '${(opacity * 100).round()}%',
-                    onChanged: (value) {
-                      setState(() {
-                        opacity = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Butonlar
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Düzenle',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () {
+                        setState(() {
+                          _selectedBook = null;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _saveImageWithQuote();
+              ),
+
+            // Search Results
+            if (_searchResults.isNotEmpty && _selectedBook == null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    final book = _searchResults[index];
+                    return ListTile(
+                      leading: book['imageUrls']?.isNotEmpty ?? false
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.network(
+                                book['imageUrls'][0],
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const Icon(Icons.book, color: Colors.grey),
+                      title: Text(
+                        book['title'] ?? 'Bilinmeyen Kitap',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: book['contributors']?.isNotEmpty ?? false
+                          ? Text(
+                              book['contributors'][0]['name'] ?? '',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedBook = book;
+                          _searchResults = [];
+                          _searchController.clear();
+                        });
+                      },
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                  ),
-                  child: const Text('Kaydet'),
                 ),
-              ],
+              ),
+
+            const SizedBox(height: 20),
+
+            // Image Selection Area
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _selectedImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _selectedImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Fotoğraf Yükle',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Post Text Field
+            TextField(
+              controller: _postTextController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Gönderi metni...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title Field
+            TextField(
+              controller: _titleController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Açıklama...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // Share Button
+            ElevatedButton(
+              onPressed: () async {
+                if (_selectedImage == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lütfen bir fotoğraf seçin')),
+                  );
+                  return;
+                }
+
+                if (_postTextController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lütfen gönderi metni girin')),
+                  );
+                  return;
+                }
+
+                if (_titleController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lütfen bir açıklama girin')),
+                  );
+                  return;
+                }
+
+                try {
+                  // Show loading indicator
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+
+                  if (_selectedBook == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Lütfen bir kitap seçin')),
+                    );
+                    return;
+                  }
+
+                  final success = await GraphQLService.createPost(
+                      imageBytes: await _selectedImage!.readAsBytes(),
+                      postText: _postTextController.text,
+                      title: _titleController.text,
+                      postType: _selectedBook!['type'] ?? '',
+                      contributorId:
+                          _selectedBook!['contributors']?[0]?['id'] ?? '',
+                      contributorName:
+                          _selectedBook!['contributors']?[0]?['name'] ?? '',
+                      postSourceIdentifier:
+                          _selectedBook!['postSourceIdentifier'] ?? '');
+
+                  // Hide loading indicator
+                  Navigator.of(context).pop();
+
+                  if (success) {
+                    // Clear form and show success message
+                    setState(() {
+                      _searchController.clear();
+                      _postTextController.clear();
+                      _titleController.clear();
+                      _selectedImage = null;
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Gönderi başarıyla oluşturuldu')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content:
+                              Text('Gönderi oluşturulurken bir hata oluştu')),
+                    );
+                  }
+                } catch (e) {
+                  // Hide loading indicator if visible
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Hata: $e')),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Paylaş',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
@@ -334,93 +428,9 @@ class _CreatepageState extends State<Createpage> {
 
   @override
   void dispose() {
-    quoteController.dispose();
+    _searchController.dispose();
+    _postTextController.dispose();
+    _titleController.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const SizedBox(height: 16),
-
-            // Fotoğraf Ekleme
-            GestureDetector(
-              onTap: _pickAndCropImage,
-              child: Container(
-                height: MediaQuery.of(context).size.width - 32,
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(16),
-                  image: selectedImage != null
-                      ? DecorationImage(
-                          image: FileImage(selectedImage!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: selectedImage == null
-                    ? const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_a_photo,
-                            size: 50,
-                            color: Colors.white38,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Fotoğraf Seç',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Açıklama Alanı
-            TextField(
-              controller: quoteController,
-              maxLines: 4,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Alıntı yaz...",
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: Colors.grey[800],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Paylaş Butonu
-            ElevatedButton(
-              onPressed: _showPreview,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text("Kaydet"),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

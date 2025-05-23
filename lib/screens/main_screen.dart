@@ -170,6 +170,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         centerTitle: false,
         actions: [
           IconButton(
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                _showSearchOverlay = true;
+              });
+              _searchFocusNode.requestFocus();
+            },
+            icon: const FaIcon(
+              FontAwesomeIcons.magnifyingGlass,
+              color: AppColors.primary,
+              size: 22,
+            ),
+          ),
+          IconButton(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -178,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   ),
                 );
               },
-              icon: FaIcon(FontAwesomeIcons.bars, color: Colors.white70)),
+              icon: FaIcon(FontAwesomeIcons.bars, color: AppColors.secondary)),
         ],
       ),
       body: Stack(
@@ -309,6 +323,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          _searchController.clear();
           setState(() {
             _showSearchOverlay = true;
           });

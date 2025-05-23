@@ -280,6 +280,7 @@ class GraphQLService {
     required String contributorId,
     required String contributorName,
     required String postSourceIdentifier,
+    List<Map<String, dynamic>>? contributors,
   }) async {
     try {
       // 1. Upload image and get URL
@@ -316,9 +317,14 @@ class GraphQLService {
           document: gql(mutation),
           variables: {
             'input': {
-              'contributors': [
-                {'name': contributorName, 'id': contributorId}
-              ],
+              'contributors': contributors ??
+                  [
+                    {
+                      'name': contributorName,
+                      'id': contributorId,
+                      'description': null
+                    }
+                  ],
               'imageUrl': imageUrl,
               'postText': postText,
               'postType': postType,
@@ -459,6 +465,19 @@ class GraphQLService {
         debugPrint('No posts found');
         return null;
       }
+      debugPrint('User ID: ${userData.id}');
+      debugPrint('User Posts:');
+      debugPrint('-------------------------');
+      for (var post in result.data!['userPosts'] as List<dynamic>) {
+        debugPrint('Post ID: ${post['id']}');
+        debugPrint('Post Text: ${post['postText']}');
+        debugPrint('Title: ${post['title']}');
+        debugPrint('Updated At: ${post['updatedAt']}');
+        debugPrint('Post Type: ${post['postType']}');
+        debugPrint('Image URL: ${post['imageUrl']}');
+        debugPrint('Contributors: ${post['contributors']}');
+        debugPrint('-------------------------');
+      }
 
       final posts = result.data!['userPosts'] as List<dynamic>;
 
@@ -530,6 +549,146 @@ class GraphQLService {
     } catch (e) {
       debugPrint('Error getting likes count: $e');
       return 0;
+    }
+  }
+
+  static Future<List<dynamic>?> getLastPosts(
+      {int skip = 0, int take = 10}) async {
+    const String query = r'''
+      query Posts($skip: Int, $take: Int) {
+        posts(skip: $skip, take: $take) {
+          author {
+            profilePictureUrl
+            username
+            id
+            isPrivate
+          }
+          id
+          imageUrl
+          isFriendsOnly
+          postSourceIdentifier
+          postType
+          title
+          updatedAt
+          postText
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {
+            'skip': skip,
+            'take': take,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error fetching posts: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null || result.data!['posts'] == null) {
+        debugPrint('No posts found');
+        return null;
+      }
+
+      final posts = result.data!['posts'] as List<dynamic>;
+
+      // Debug output for monitoring
+      debugPrint('Fetched ${posts.length} posts');
+      debugPrint('-------------------------');
+
+      return posts;
+    } catch (e) {
+      debugPrint('Error fetching posts: $e');
+      return null;
+    }
+  }
+
+  // Add this new method to the GraphQLService class
+  static Future<bool> createLike(String postId) async {
+    const String mutation = r'''
+      mutation CreateLike($postId: String!) {
+        createLike(postId: $postId) {
+          message
+          success
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'postId': postId,
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Like creation error: ${result.exception}');
+        return false;
+      }
+
+      final success = result.data?['createLike']['success'] as bool? ?? false;
+      debugPrint(
+          'Like creation message: ${result.data?['createLike']['message']}');
+
+      return success;
+    } catch (e) {
+      debugPrint('Error creating like: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> removeLike(String postId) async {
+    const String mutation = r'''
+      mutation RemoveLike($postId: String!) {
+        removeLike(postId: $postId) {
+          message
+          success
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {
+            'postId': postId,
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Like removal error: ${result.exception}');
+        return false;
+      }
+
+      final success = result.data?['removeLike']['success'] as bool? ?? false;
+      debugPrint(
+          'Like removal message: ${result.data?['removeLike']['message']}');
+
+      return success;
+    } catch (e) {
+      debugPrint('Error removing like: $e');
+      return false;
     }
   }
 }

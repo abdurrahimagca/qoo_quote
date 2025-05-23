@@ -100,10 +100,7 @@ class _UpdateUsernameState extends State<UpdateUsername> {
         const SnackBar(content: Text('Kullanıcı adı başarıyla güncellendi')),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyHomePage()),
-      );
+      Navigator.pop(context);
     } catch (e) {
       debugPrint('Error updating user settings: $e');
       ScaffoldMessenger.of(context).showSnackBar(

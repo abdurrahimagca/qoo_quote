@@ -1,26 +1,23 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/services/graphql_service.dart';
-import 'package:qoo_quote/widgets/like_button.dart';
 
-class BuildProfilePosts extends StatefulWidget {
-  const BuildProfilePosts({super.key});
+class BuildLastPosts extends StatefulWidget {
+  const BuildLastPosts({super.key});
 
   @override
-  State<BuildProfilePosts> createState() => _BuildProfilePostsState();
+  State<BuildLastPosts> createState() => _BuildLastPostsState();
 }
 
-class _BuildProfilePostsState extends State<BuildProfilePosts> {
+class _BuildLastPostsState extends State<BuildLastPosts> {
   bool _refreshPosts = false;
-  bool isLiked = false;
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<dynamic>?>(
       key: ValueKey(_refreshPosts), // Yenileme için key ekledik
-      future: GraphQLService.profilePosts(),
+      future: GraphQLService.getLastPosts(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -46,7 +43,7 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
               text: post['postText'],
               author: post['author']['username'],
               authorImage: post['author']['profilePictureUrl'],
-              createdAt: DateTime.parse(post['createdAt']),
+              createdAt: DateTime.parse("2025-05-17T21:10:19.017Z"),
             );
           },
         );
@@ -62,6 +59,7 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
     required String author,
     required String authorImage,
     required DateTime createdAt,
+    bool isLiked = false,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
@@ -94,7 +92,7 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
                   ),
                   child: CircleAvatar(
                     backgroundImage: CachedNetworkImageProvider(authorImage),
-                    radius: 22,
+                    radius: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -105,17 +103,17 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
                       Text(
                         author,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white.withOpacity(0.95),
                           fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 2),
                       Text(
                         title,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
-                          fontSize: 12,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -130,8 +128,8 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
                   itemBuilder: (context) => [
                     PopupMenuItem(
                       onTap: () async {
-                        debugPrint(post['id']);
-
+                        // PopupMenuItem'ın onTap'i Navigator.pop'tan sonra çalıştığı için
+                        // Future.delayed kullanıyoruz
                         Future.delayed(
                           Duration.zero,
                           () => showDialog(
@@ -224,38 +222,28 @@ class _BuildProfilePostsState extends State<BuildProfilePosts> {
                         child: const Icon(Icons.error, color: Colors.white),
                       ),
                     ),
-                    // Shadow overlay
                     Container(
-                      color: Colors.black38,
-                    ),
-                    // Text container with centered text
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Center(
-                        child: Text(
-                          text,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.5),
+                          ],
                         ),
                       ),
-                    ),
-                    // Keep the like button
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: LikeButton(
-                        postId: post["id"],
+                      child: Align(
+                        alignment: Alignment.bottomLeft,
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ],

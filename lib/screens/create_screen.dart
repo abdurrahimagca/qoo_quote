@@ -229,10 +229,17 @@ class _TestPageState extends State<CreateScreen> {
                             )
                           : null,
                       onTap: () {
+                        final authorName =
+                            book['contributors']?[0]?['name'] ?? '';
+                        final bookTitle = book['title'] ?? '';
+                        final titleText = '$authorName / $bookTitle';
+
                         setState(() {
                           _selectedBook = book;
                           _searchResults = [];
                           _searchController.clear();
+                          _titleController.text =
+                              titleText; // Otomatik olarak title field'ını doldur
                         });
                       },
                     );
@@ -359,6 +366,14 @@ class _TestPageState extends State<CreateScreen> {
                     return;
                   }
 
+                  final contributors = [
+                    {
+                      'id': _selectedBook!['contributors']?[0]?['id'] ?? '',
+                      'name': _selectedBook!['contributors']?[0]?['name'] ?? '',
+                      'description': null
+                    }
+                  ];
+
                   final success = await GraphQLService.createPost(
                       imageBytes: await _selectedImage!.readAsBytes(),
                       postText: _postTextController.text,
@@ -369,7 +384,8 @@ class _TestPageState extends State<CreateScreen> {
                       contributorName:
                           _selectedBook!['contributors']?[0]?['name'] ?? '',
                       postSourceIdentifier:
-                          _selectedBook!['postSourceIdentifier'] ?? '');
+                          _selectedBook!['postSourceIdentifier'] ?? '',
+                      contributors: contributors);
 
                   // Hide loading indicator
                   Navigator.of(context).pop();

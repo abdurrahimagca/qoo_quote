@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
+import 'package:qoo_quote/screens/user_screen.dart';
 import 'package:qoo_quote/services/graphql_service.dart';
 
 class SearchPage extends StatefulWidget {
@@ -103,44 +105,54 @@ class _SearchPageState extends State<SearchPage>
       itemCount: users.length,
       itemBuilder: (context, index) {
         final user = users[index];
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundImage: CachedNetworkImageProvider(user.profileImage),
-            ),
-            title: Text(
-              user.username,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+        return InkWell(
+          onTap: () {
+            // Navigate to user profile
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserPage(),
+                ));
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 5),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.grey.withOpacity(0.3),
+                width: 1,
               ),
             ),
-            trailing: OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  user.isFollowing = !user.isFollowing;
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundImage: CachedNetworkImageProvider(user.profileImage),
+              ),
+              title: Text(
+                user.username,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              child: Text(
-                user.isFollowing ? 'Following' : 'Follow',
-                style: TextStyle(
-                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
+              trailing: OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    user.isFollowing = !user.isFollowing;
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: user.isFollowing ? Colors.grey : AppColors.secondary,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  user.isFollowing ? 'Following' : 'Follow',
+                  style: TextStyle(
+                    color: user.isFollowing ? Colors.grey : AppColors.secondary,
+                  ),
                 ),
               ),
             ),
@@ -153,45 +165,43 @@ class _SearchPageState extends State<SearchPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      appBar: AppBar(
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _searchFocusNode.unfocus();
+              _searchController.clear();
+            },
+            icon: FaIcon(FontAwesomeIcons.chevronLeft, color: Colors.white)),
+        title: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'keyword',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide:
+                  BorderSide(color: AppColors.secondary.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: const BorderSide(color: AppColors.secondary),
+            ),
+            prefixIcon:
+                Icon(Icons.search, color: Colors.white.withOpacity(0.5)),
+            filled: true,
+            fillColor: Colors.grey[900],
+          ),
+        ),
+        backgroundColor: AppColors.background,
+      ),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             // Search Bar
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.withOpacity(0.2),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'keyword',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide:
-                        BorderSide(color: AppColors.secondary.withOpacity(0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: AppColors.secondary),
-                  ),
-                  prefixIcon:
-                      Icon(Icons.search, color: Colors.white.withOpacity(0.5)),
-                  filled: true,
-                  fillColor: Colors.grey[900],
-                ),
-              ),
-            ),
 
             // TabBar
             TabBar(

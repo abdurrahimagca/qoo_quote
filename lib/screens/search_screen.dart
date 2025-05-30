@@ -18,11 +18,13 @@ class SearchPage extends StatefulWidget {
 }
 
 class UserItem {
+  final String userid; // Yeni eklenen field
   final String username;
   final String profileImage;
   bool isFollowing;
 
   UserItem({
+    required this.userid, // Constructor'a eklendi
     required this.username,
     required this.profileImage,
     this.isFollowing = false,
@@ -75,6 +77,7 @@ class _SearchPageState extends State<SearchPage>
         setState(() {
           users = results
               .map((user) => UserItem(
+                    userid: user['id'] as String, // ID ekledik
                     username: user['username'] as String,
                     profileImage: user['profilePictureUrl'] as String? ??
                         'https://picsum.photos/200',
@@ -107,11 +110,14 @@ class _SearchPageState extends State<SearchPage>
         final user = users[index];
         return InkWell(
           onTap: () {
-            // Navigate to user profile
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => UserPage(),
+                  builder: (context) => UserPage(
+                    userId: user.userid,
+                    username: user.username,
+                    profilePictureUrl: user.profileImage,
+                  ), // userId eklendi
                 ));
           },
           child: Container(

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
 import 'package:qoo_quote/services/graphql_service.dart';
+import 'package:qoo_quote/services/friendship_service.dart';
 import 'package:qoo_quote/widgets/list_builders/profile_posts.dart';
 
 //please do not use these kind of wrong types
@@ -49,13 +50,8 @@ class _UserpageState extends State<ProfilePage>
   String? _profilePictureUrl;
   String? _username;
 
-  final List<UserItem> users = List.generate(
-    10,
-    (index) => UserItem(
-      username: "user.${index + 1}",
-      profileImage: "https://picsum.photos/200",
-    ),
-  );
+  List<dynamic>? _friends = [];
+  bool _loadingFriends = true;
 
   @override
   void initState() {
@@ -68,6 +64,7 @@ class _UserpageState extends State<ProfilePage>
     _scrollController = ScrollController();
 
     _fetchUserData();
+    _fetchFriends();
   }
 
   Future<void> _fetchUserData() async {
@@ -86,6 +83,25 @@ class _UserpageState extends State<ProfilePage>
       });
     }
     _isready = true;
+  }
+
+  Future<void> _fetchFriends() async {
+    try {
+      final friends = await FriendshipService.getFriends();
+      if (mounted) {
+        setState(() {
+          _friends = friends;
+          _loadingFriends = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching friends: $e');
+      if (mounted) {
+        setState(() {
+          _loadingFriends = false;
+        });
+      }
+    }
   }
 
   @override
@@ -139,7 +155,7 @@ class _UserpageState extends State<ProfilePage>
                                       AppColors.primary, // Seçili tab rengi
 
                                   tabs: const [
-                                    Tab(text: "TAKİP"),
+                                    Tab(text: "ARKADAŞLAR"),
                                     Tab(text: "PROFİL"),
                                     Tab(text: "TAKİPÇİ"),
                                   ],
@@ -154,9 +170,9 @@ class _UserpageState extends State<ProfilePage>
                   body: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildUserList(users),
+                      _buildUserList(_friends),
                       BuildProfilePosts(),
-                      _buildUserList(users),
+                      _buildUserList(_friends),
                     ],
                   ),
                 ),
@@ -171,12 +187,28 @@ class _UserpageState extends State<ProfilePage>
     super.dispose();
   }
 
-  Widget _buildUserList(List<UserItem> users) {
+  Widget _buildUserList(List<dynamic>? users) {
+    if (_loadingFriends) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (users == null || users.isEmpty) {
+      return const Center(
+        child: Text(
+          'Henüz arkadaşınız yok',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.only(top: 0),
       itemCount: users.length,
       itemBuilder: (context, index) {
-        final user = users[index];
+        final friendData = users[index]['addressee'];
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 5),
           decoration: BoxDecoration(
@@ -188,36 +220,26 @@ class _UserpageState extends State<ProfilePage>
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundImage: CachedNetworkImageProvider(user.profileImage),
+              backgroundImage: CachedNetworkImageProvider(
+                friendData['profilePictureUrl'] ?? 'https://picsum.photos/200',
+              ),
             ),
             title: Text(
-              user.username,
+              friendData['username'] ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            trailing: OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  user.isFollowing = !user.isFollowing;
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: Text(
-                user.isFollowing ? 'Following' : 'Follow',
-                style: TextStyle(
-                  color: user.isFollowing ? Colors.grey : AppColors.secondary,
-                ),
-              ),
-            ),
+            // Optionally show more friend information
+            subtitle: friendData['gender'] != null
+                ? Text(
+                    friendData['gender'],
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  )
+                : null,
           ),
         );
       },

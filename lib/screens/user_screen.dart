@@ -4,21 +4,17 @@ import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
 import 'package:qoo_quote/widgets/button.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:qoo_quote/services/graphql_service.dart';
+import 'package:qoo_quote/widgets/friend_request_button.dart';
+import 'package:qoo_quote/widgets/list_builders/user_posts.dart';
 
-//please do not use these kind of wrong types
-//it is not a bad practice
-//what we're building is NOT A KINDLE
 class UserPost {
   final String imageUrl;
   final String quote;
-  //what's the purpose of this?
   final String bookTitle;
-  // author is only the user it self
   final String author;
 
   UserPost({
-    //we do not take imageUrl never what u have to do is completely
-    //different a base64 string should be given
     required this.imageUrl,
     required this.quote,
     required this.bookTitle,
@@ -27,7 +23,15 @@ class UserPost {
 }
 
 class UserPage extends StatefulWidget {
-  const UserPage({super.key});
+  final String userId;
+  final String? username;
+  final String? profilePictureUrl;
+  const UserPage({
+    super.key,
+    required this.userId,
+    this.username,
+    this.profilePictureUrl,
+  });
 
   @override
   State<UserPage> createState() => _UserpageState();
@@ -37,9 +41,13 @@ class _UserpageState extends State<UserPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
+  List<Map<String, dynamic>>? userData;
+  bool isLoading = true;
+
   final List<UserItem> users = List.generate(
     10,
     (index) => UserItem(
+      userid: "user_id_${index + 1}",
       username: "user.${index + 1}",
       profileImage: "https://picsum.photos/200",
     ),
@@ -54,10 +62,36 @@ class _UserpageState extends State<UserPage>
       initialIndex: 1, // POSTS sekmesinden başlaması için
     );
     _scrollController = ScrollController();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      //final data = await GraphQLService.getUserComments(widget.userId);
+      setState(() {
+        // userData = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching user data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final user =
+        userData != null && userData!.isNotEmpty ? userData![0]['user'] : null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: DefaultTabController(
@@ -75,31 +109,7 @@ class _UserpageState extends State<UserPage>
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 actions: [
-                  OutlinedButton(
-                    onPressed: () {
-                      setState(() {
-                        users[0].isFollowing = !users[0].isFollowing;
-                      });
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: users[0].isFollowing
-                            ? Colors.grey
-                            : AppColors.secondary,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text(
-                      users[0].isFollowing ? 'Takip' : 'Takip Et',
-                      style: TextStyle(
-                        color: users[0].isFollowing
-                            ? Colors.grey
-                            : AppColors.secondary,
-                      ),
-                    ),
-                  ),
+                  FriendRequestButton(userId: widget.userId),
                 ],
                 backgroundColor: AppColors.background,
                 expandedHeight:
@@ -109,21 +119,22 @@ class _UserpageState extends State<UserPage>
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0, vertical: 15.0),
+                        horizontal: 10.0, vertical: 15.0),
                     child: Column(
                       mainAxisAlignment:
                           MainAxisAlignment.end, // Aşağıda hizalama
                       children: [
-                        const CircleAvatar(
-                          radius: 60, // Biraz küçültüldü
+                        CircleAvatar(
+                          radius: 60,
                           backgroundImage: CachedNetworkImageProvider(
-                            "https://picsum.photos/300",
+                            widget.profilePictureUrl ??
+                                "https://picsum.photos/200",
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          "Username",
-                          style: TextStyle(
+                        Text(
+                          widget.username ?? "USERNAME",
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18, // Biraz küçültüldü
                             fontWeight: FontWeight.bold,
@@ -138,7 +149,7 @@ class _UserpageState extends State<UserPage>
 
                           tabs: const [
                             Tab(text: "TAKİP"),
-                            Tab(text: "PROFİL"),
+                            Tab(text: "PAYLAŞIMLAR"),
                             Tab(text: "TAKİPÇİ"),
                           ],
                         ),
@@ -153,7 +164,10 @@ class _UserpageState extends State<UserPage>
             controller: _tabController,
             children: [
               _buildUserList(users),
-              _buildPostsList(),
+              BuildUserPosts(
+                  userId: widget.userId,
+                  username: widget.username,
+                  profileImage: widget.profilePictureUrl),
               _buildUserList(users),
             ],
           ),

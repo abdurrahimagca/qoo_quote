@@ -523,7 +523,7 @@ class GraphQLService {
 
   static Future<int> getLikesCount(String postId) async {
     const String query = r'''
-      query GetPostLikes($postId: String!) {
+      query GetPostLikes($postId: $postId) {
         getLikesCount(postId: $postId)
       }
     ''';
@@ -535,7 +535,9 @@ class GraphQLService {
       final result = await client!.query(
         QueryOptions(
           document: gql(query),
-          variables: {'postId': postId},
+          variables: {
+            'postId': postId,
+          },
           fetchPolicy: FetchPolicy.networkOnly,
         ),
       );
@@ -616,7 +618,7 @@ class GraphQLService {
   // Add this new method to the GraphQLService class
   static Future<bool> createLike(String postId) async {
     const String mutation = r'''
-      mutation CreateLike($postId: String!) {
+      mutation CreateLike($postId: $postId) {
         createLike(postId: $postId) {
           message
           success
@@ -625,10 +627,33 @@ class GraphQLService {
     ''';
 
     try {
-      final client =
-          (_client?.value ?? await initializeClient().then((c) => c.value));
+      // Her seferinde yeni bir client oluştur ve token'ı yeniden al
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'refresh-token');
+      final apiKey = dotenv.env['API_KEY'];
 
-      final result = await client!.mutate(
+      final httpLink =
+          HttpLink('https://qq-api-test-v0.homelab-kaleici.space/graphql');
+
+      final authLink = Link.from([
+        AuthLink(
+          headerKey: 'Authorization',
+          getToken: () async => 'Bearer $token',
+        ),
+        AuthLink(
+          headerKey: 'qq-api-key',
+          getToken: () async => apiKey,
+        ),
+      ]);
+
+      final link = authLink.concat(httpLink);
+
+      final client = GraphQLClient(
+        cache: GraphQLCache(),
+        link: link,
+      );
+
+      final result = await client.mutate(
         MutationOptions(
           document: gql(mutation),
           variables: {
@@ -655,7 +680,7 @@ class GraphQLService {
 
   static Future<bool> removeLike(String postId) async {
     const String mutation = r'''
-      mutation RemoveLike($postId: String!) {
+      mutation RemoveLike($postId: $postId) {
         removeLike(postId: $postId) {
           message
           success
@@ -689,6 +714,145 @@ class GraphQLService {
     } catch (e) {
       debugPrint('Error removing like: $e');
       return false;
+    }
+  }
+
+  static Future<bool> updateProfile({
+    String? username,
+    List<int>? imageBytes,
+  }) async {
+    try {
+      // Only proceed if at least one parameter is provided
+      if (username == null && imageBytes == null) {
+        debugPrint('Error: No update parameters provided');
+        return false;
+      }
+
+      // Upload image if provided
+      String? uploadedImageUrl;
+      if (imageBytes != null) {
+        debugPrint('Uploading profile image...');
+        uploadedImageUrl = await uploadImage(imageBytes);
+        if (uploadedImageUrl == null) {
+          debugPrint('Profile image upload failed');
+          return false;
+        }
+        debugPrint('Profile image uploaded successfully: $uploadedImageUrl');
+      }
+
+      const String mutation = r'''
+        mutation PatchUser($input: UpdateUserInput!) {
+          patchUser(input: $input) {
+            id
+            username
+            profilePictureUrl
+            isPrivate
+          }
+        }
+      ''';
+
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      // Only include fields that are being updated
+      final input = <String, dynamic>{};
+      if (username != null) input['username'] = username;
+      if (uploadedImageUrl != null)
+        input['profilePictureUrl'] = uploadedImageUrl;
+
+      final result = await client!.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'input': input},
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Profile update error: ${result.exception}');
+        return false;
+      }
+
+      final updatedUser = result.data?['patchUser'];
+      if (updatedUser == null) {
+        debugPrint('Profile update failed: No data returned');
+        return false;
+      }
+
+      debugPrint('Profile updated successfully');
+      return true;
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>?> getUserPosts(String userId,
+      {int skip = 0, int take = 10}) async {
+    const String query = r'''
+      query User($userId: String, $skip: Int, $take: Int) {
+        getUserPosts(userId: $userId, skip: $skip, take: $take) {
+          imageUrl
+          postText
+          title
+          id
+          createdAt
+          comments {
+            id
+            content
+            user {
+              profilePictureUrl
+              id
+              username
+            }
+          }
+        }
+      }
+    ''';
+
+    try {
+      final client =
+          (_client?.value ?? await initializeClient().then((c) => c.value));
+
+      final result = await client!.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {
+            'userId': userId,
+            'skip': skip,
+            'take': take,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        ),
+      );
+
+      if (result.hasException) {
+        debugPrint('Error fetching user posts: ${result.exception}');
+        throw result.exception!;
+      }
+
+      if (result.data == null || result.data!['getUserPosts'] == null) {
+        debugPrint('No posts found for user');
+        return null;
+      }
+
+      final posts = result.data!['getUserPosts'] as List<dynamic>;
+
+      // Debug output
+      debugPrint('Fetched ${posts.length} posts for user $userId');
+      debugPrint('-------------------------');
+      for (var post in posts) {
+        debugPrint('Post ID: ${post['id']}');
+        debugPrint('Title: ${post['title']}');
+        debugPrint('Text: ${post['postText']}');
+        debugPrint('Created At: ${post['createdAt']}');
+        debugPrint('Comments count: ${post['comments']?.length ?? 0}');
+        debugPrint('-------------------------');
+      }
+
+      return posts;
+    } catch (e) {
+      debugPrint('Error fetching user posts: $e');
+      return null;
     }
   }
 }

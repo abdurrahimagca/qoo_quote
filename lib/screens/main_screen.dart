@@ -6,11 +6,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:qoo_quote/core/theme/colors.dart';
 import 'package:qoo_quote/screens/create_screen.dart';
+import 'package:qoo_quote/screens/friend_req.dart';
 import 'package:qoo_quote/screens/home_page.dart';
 import 'package:qoo_quote/screens/login.dart';
 import 'package:qoo_quote/screens/profile.dart';
 import 'package:qoo_quote/screens/search_screen.dart';
 import 'package:qoo_quote/screens/settings/settings.dart';
+import 'package:qoo_quote/services/friendship_service.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -22,6 +24,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  int _pendingRequestCount = 0;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -41,6 +44,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _checkAccessToken();
+    _fetchPendingRequestCount();
   }
 
   Future<void> _checkAccessToken() async {
@@ -53,6 +57,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       }
     } catch (e) {
       debugPrint('Error reading refresh token: $e');
+    }
+  }
+
+  Future<void> _fetchPendingRequestCount() async {
+    try {
+      final requests = await FriendshipService.getPendingFriendRequests();
+      if (mounted) {
+        setState(() {
+          _pendingRequestCount = requests?.length ?? 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching friend request count: $e');
     }
   }
 
@@ -182,6 +199,47 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               color: AppColors.primary,
               size: 22,
             ),
+          ),
+          Stack(
+            children: [
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FriendReq(),
+                    ),
+                  ).then((_) =>
+                      _fetchPendingRequestCount()); // Refresh count when returning
+                },
+                icon: FaIcon(FontAwesomeIcons.userPlus,
+                    color: AppColors.tertiary),
+              ),
+              if (_pendingRequestCount > 0)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _pendingRequestCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
           IconButton(
               onPressed: () {
@@ -320,22 +378,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               ),
             ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _searchController.clear();
-          setState(() {
-            _showSearchOverlay = true;
-          });
-          _searchFocusNode.requestFocus();
-        },
-        backgroundColor: Colors.black,
-        shape: const CircleBorder(), // Yuvarlak şekil eklendi
-        elevation: 4, // Opsiyonel: gölge efekti
-        child: const Icon(
-          Icons.search,
-          color: AppColors.secondary,
-        ),
       ),
     );
   }
